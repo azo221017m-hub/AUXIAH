@@ -21,6 +21,15 @@ const COUNTRIES = [
   'Puerto Rico', 'España', 'Estados Unidos', 'Otro',
 ];
 
+const COUNTRY_CODE_MAP = {
+  MX: 'México', GT: 'Guatemala', HN: 'Honduras', SV: 'El Salvador',
+  NI: 'Nicaragua', CR: 'Costa Rica', PA: 'Panamá', CO: 'Colombia',
+  VE: 'Venezuela', EC: 'Ecuador', PE: 'Perú', BO: 'Bolivia',
+  CL: 'Chile', AR: 'Argentina', UY: 'Uruguay', PY: 'Paraguay',
+  BR: 'Brasil', CU: 'Cuba', DO: 'República Dominicana',
+  PR: 'Puerto Rico', ES: 'España', US: 'Estados Unidos',
+};
+
 export default function ClientPage() {
   const { connected, lastMessage, send } = useWebSocket('client');
   const { isRecording, countdown, isSupported, start, stop } = useVoiceRecognition();
@@ -90,6 +99,29 @@ export default function ClientPage() {
         );
         setLocationLoading(false);
         showToast('📍 Ubicación capturada', 'success');
+
+        // Reverse geocode to auto-detect country
+        fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${loc.lat}&lon=${loc.lng}&format=json`,
+          { headers: { 'Accept-Language': 'es', 'User-Agent': 'AUXIAH/1.0 (auxiah-app)' } }
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            const code = data?.address?.country_code?.toUpperCase();
+            if (code && COUNTRY_CODE_MAP[code]) {
+              setCountry(COUNTRY_CODE_MAP[code]);
+            } else if (data?.address?.country) {
+              // Fallback: try matching the returned name against the COUNTRIES list
+              const name = data.address.country;
+              const match = COUNTRIES.find(
+                (c) => c.toLowerCase() === name.toLowerCase()
+              );
+              setCountry(match || 'Otro');
+            }
+          })
+          .catch(() => {
+            // Silently ignore reverse-geocoding errors; user can still pick manually
+          });
       },
       (err) => {
         setLocationLoading(false);
