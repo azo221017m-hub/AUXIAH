@@ -157,7 +157,11 @@ export default function MonitorPage() {
 
     if (lastMessage.type === 'new_request') {
       const req = lastMessage.request;
-      setRequests((prev) => [...prev, req]);
+      setRequests((prev) => {
+        // Prevent duplicate: skip if this ID already exists
+        if (prev.some((r) => r.id === req.id)) return prev;
+        return [...prev, req];
+      });
       setUnreadCount((prev) => prev + 1);
       newIdsRef.current.add(req.id);
       setTimeout(() => newIdsRef.current.delete(req.id), 4000);
@@ -166,7 +170,14 @@ export default function MonitorPage() {
         setFlyTarget([req.location.lat, req.location.lng]);
       }
     } else if (lastMessage.type === 'history') {
-      setRequests((prev) => [...prev, ...lastMessage.requests]);
+      setRequests((prev) => {
+        // Merge by ID to prevent duplicates on reconnect
+        const map = new Map(prev.map((r) => [r.id, r]));
+        for (const r of lastMessage.requests) {
+          map.set(r.id, r);
+        }
+        return Array.from(map.values());
+      });
     } else if (lastMessage.type === 'status_updated') {
       const { id, estatus } = lastMessage;
       setRequests((prev) =>
