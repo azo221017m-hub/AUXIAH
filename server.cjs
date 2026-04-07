@@ -110,7 +110,8 @@ wss.on('connection', (ws) => {
           message: msg.message || '',
           country: msg.country || '',
           location: msg.location || null,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          estatus: 'Abierto'
         };
         activeRequests.push(request);
         // Keep only last 100 requests in memory
@@ -130,6 +131,39 @@ wss.on('connection', (ws) => {
         // Acknowledge to the client
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ack', id: request.id }));
+        }
+        break;
+      }
+
+      // A monitor updates the status of a request
+      case 'update_status': {
+        const { id, estatus } = msg;
+        const validStatuses = ['Abierto', 'Asistiendo', 'Terminado'];
+        if (!id || !validStatuses.includes(estatus)) break;
+
+        // Update in activeRequests
+        const activeReq = activeRequests.find((r) => r.id === id);
+        if (activeReq) activeReq.estatus = estatus;
+
+        // Update in persisted solicitudes
+        const persistedReq = allSolicitudes.find((r) => r.id === id);
+        if (persistedReq) {
+          persistedReq.estatus = estatus;
+          saveSolicitudes();
+        }
+
+        // Remove from activeRequests if Terminado
+        if (estatus === 'Terminado') {
+          const idx = activeRequests.findIndex((r) => r.id === id);
+          if (idx !== -1) activeRequests.splice(idx, 1);
+        }
+
+        // Broadcast status update to all monitors
+        const statusPayload = JSON.stringify({ type: 'status_updated', id, estatus });
+        for (const monitor of monitors) {
+          if (monitor.readyState === WebSocket.OPEN) {
+            monitor.send(statusPayload);
+          }
         }
         break;
       }

@@ -442,3 +442,69 @@
     flex-direction: column;
   }
 }
+
+/* ---- Status badge ---- */
+.estatus-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.estatus-abierto {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.estatus-asistiendo {
+  background: #FFD700;
+  color: #0D0D1A;
+}
+
+.estatus-terminado {
+  background: #777;
+  color: #fff;
+}
+
+/* ---- Context menu ---- */
+.context-menu {
+  position: fixed;
+  z-index: 20000;
+  background: var(--color-surface);
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  padding: 6px 0;
+  min-width: 170px;
+}
+
+.context-menu-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.context-menu-btn:hover {
+  background: #1a1a3a;
+}
+
+.context-menu-btn.ctx-asistiendo:hover {
+  background: rgba(255, 215, 0, 0.15);
+}
+
+.context-menu-btn.ctx-terminado:hover {
+  background: rgba(76, 175, 80, 0.15);
+}

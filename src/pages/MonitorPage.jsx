@@ -85,13 +85,16 @@ function FlyTo({ position }) {
 }
 
 export default function MonitorPage() {
-  const { connected, lastMessage } = useWebSocket('monitor');
+  const { connected, lastMessage, send } = useWebSocket('monitor');
   const [requests, setRequests] = useState([]);
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [unreadCount, setUnreadCount] = useState(0);
   const [monitorPos, setMonitorPos] = useState([19.4326, -99.1332]);
   const [flyTarget, setFlyTarget] = useState(null);
   const newIdsRef = useRef(new Set());
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState(null);
 
   // Audit panel state
   const [auditOpen, setAuditOpen] = useState(false);
@@ -127,6 +130,11 @@ export default function MonitorPage() {
       }
     } else if (lastMessage.type === 'history') {
       setRequests((prev) => [...prev, ...lastMessage.requests]);
+    } else if (lastMessage.type === 'status_updated') {
+      const { id, estatus } = lastMessage;
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, estatus } : r))
+      );
     }
   }, [lastMessage]);
 
@@ -173,8 +181,32 @@ export default function MonitorPage() {
     }
   }, []);
 
+  // Context menu: right-click on a card
+  const handleCardContextMenu = useCallback((e, req) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, request: req });
+  }, []);
+
+  const handleStatusChange = useCallback((id, estatus) => {
+    send({ type: 'update_status', id, estatus });
+    // Optimistic update
+    setRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, estatus } : r))
+    );
+    setContextMenu(null);
+  }, [send]);
+
+  // Close context menu on click anywhere
+  useEffect(() => {
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, []);
+
+  // Filter out "Terminado" requests, then apply type filter
+  const visibleRequests = requests.filter((r) => r.estatus !== 'Terminado');
   const filteredRequests =
-    activeFilter === 'ALL' ? requests : requests.filter((r) => r.requestType === activeFilter);
+    activeFilter === 'ALL' ? visibleRequests : visibleRequests.filter((r) => r.requestType === activeFilter);
 
   const filters = [
     { key: 'ALL', label: 'Todas', cls: 'f-all' },
@@ -235,7 +267,7 @@ export default function MonitorPage() {
             </CircleMarker>
 
             {/* Request markers */}
-            {requests
+            {visibleRequests
               .filter((r) => r.location)
               .map((r) => {
                 const cfg = TYPE_CONFIG[r.requestType] || {};
@@ -289,15 +321,20 @@ export default function MonitorPage() {
             {[...filteredRequests].reverse().map((r) => {
               const cfg = TYPE_CONFIG[r.requestType] || {};
               const safeType = TYPE_CONFIG[r.requestType] ? r.requestType : 'UNKNOWN';
+              const estatus = r.estatus || 'Abierto';
               return (
                 <div
                   key={r.id}
                   className={`req-card ${safeType} ${newIdsRef.current.has(r.id) ? 'new' : ''}`}
                   role="listitem"
                   onClick={() => handleCardClick(r)}
+                  onContextMenu={(e) => handleCardContextMenu(e, r)}
                 >
                   <div className="req-card-type">
                     {cfg.emoji || ''} {r.requestType}
+                    <span className={`estatus-badge estatus-${estatus.toLowerCase()}`}>
+                      {estatus}
+                    </span>
                   </div>
                   <div className="req-card-msg">{r.message || <em>Sin mensaje</em>}</div>
                   <div className="req-card-meta">
@@ -360,6 +397,7 @@ export default function MonitorPage() {
                     <th>ID</th>
                     <th>Fecha / Hora</th>
                     <th>Tipo</th>
+                    <th>Estatus</th>
                     <th>País</th>
                     <th>Mensaje</th>
                     <th>Ubicación</th>
@@ -368,7 +406,7 @@ export default function MonitorPage() {
                 <tbody>
                   {auditData.length === 0 && !auditLoading && (
                     <tr>
-                      <td colSpan="6" className="audit-empty">Sin registros</td>
+                      <td colSpan="7" className="audit-empty">Sin registros</td>
                     </tr>
                   )}
                   {auditData.map((r) => {
@@ -379,6 +417,11 @@ export default function MonitorPage() {
                         <td>{r.timestamp ? new Date(r.timestamp).toLocaleString('es-MX') : '—'}</td>
                         <td style={{ color: cfg.color || '#fff' }}>
                           {cfg.emoji || ''} {r.requestType}
+                        </td>
+                        <td>
+                          <span className={`estatus-badge estatus-${(r.estatus || 'abierto').toLowerCase()}`}>
+                            {r.estatus || 'Abierto'}
+                          </span>
                         </td>
                         <td>{r.country || '—'}</td>
                         <td className="audit-msg">{r.message || <em>Sin mensaje</em>}</td>
@@ -394,6 +437,27 @@ export default function MonitorPage() {
               </table>
             </div>
           </div>
+        </div>
+      )}
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="context-menu-btn ctx-asistiendo"
+            onClick={() => handleStatusChange(contextMenu.request.id, 'Asistiendo')}
+          >
+            🟡 Asistiendo
+          </button>
+          <button
+            className="context-menu-btn ctx-terminado"
+            onClick={() => handleStatusChange(contextMenu.request.id, 'Terminado')}
+          >
+            ✅ Terminado
+          </button>
         </div>
       )}
     </div>
