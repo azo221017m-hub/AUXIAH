@@ -281,3 +281,33 @@
   color: #555;
   border-top: 1px solid #222;
 }
+
+/* ---- Country selector ---- */
+.country-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  width: 100%;
+  text-align: center;
+}
+
+.country-select {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  background: #0D0D1A;
+  color: var(--color-text);
+  border: 2px solid #333;
+  border-radius: 10px;
+  cursor: pointer;
+  appearance: auto;
+  font-family: inherit;
+}
+
+.country-select:focus {
+  border-color: #FFD700;
+  outline: none;
+}
