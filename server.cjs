@@ -356,6 +356,20 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      // A client sends a toast (follow-up) message to monitors
+      case 'toast': {
+        const toastPayload = JSON.stringify({
+          type: 'toast',
+          message: msg.message || '',
+        });
+        for (const monitor of monitors) {
+          if (monitor.readyState === WebSocket.OPEN) {
+            monitor.send(toastPayload);
+          }
+        }
+        break;
+      }
+
       default:
         break;
     }

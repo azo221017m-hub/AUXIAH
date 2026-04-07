@@ -42,8 +42,8 @@
 .client-page header h1 {
   font-size: 2rem;
   letter-spacing: 3px;
-  color: #FFD700;
-  text-shadow: 0 2px 8px rgba(255,215,0,0.4);
+  color: #BCC940;
+  text-shadow: 0 2px 8px rgba(188,201,64,0.4);
 }
 
 .client-page header p {
@@ -60,7 +60,7 @@
   background: #1a1a2e;
   border-bottom: 1px solid #333;
   min-height: 36px;
-  color: #FFD700;
+  color: #BCC940;
   transition: background 0.4s;
 }
 
@@ -129,12 +129,12 @@
 .btn-alert:active { transform: scale(0.96); }
 
 .btn-alert:focus-visible {
-  outline: 4px solid #FFD700;
+  outline: 4px solid #BCC940;
   outline-offset: 3px;
 }
 
 .btn-alert.selected {
-  box-shadow: 0 0 0 4px #FFD700, 0 4px 16px rgba(0,0,0,0.4);
+  box-shadow: 0 0 0 4px #BCC940, 0 4px 16px rgba(0,0,0,0.4);
 }
 
 .btn-asistencia { background: var(--color-asistencia); }
@@ -165,7 +165,7 @@
 }
 
 .btn-location:active { transform: scale(0.96); }
-.btn-location:focus-visible { outline: 4px solid #FFD700; outline-offset: 3px; }
+.btn-location:focus-visible { outline: 4px solid #BCC940; outline-offset: 3px; }
 
 .location-display {
   background: #0D0D1A;
@@ -257,7 +257,7 @@
 }
 
 .btn-send:active { transform: scale(0.96); }
-.btn-send:focus-visible { outline: 4px solid #FFD700; outline-offset: 3px; }
+.btn-send:focus-visible { outline: 4px solid #BCC940; outline-offset: 3px; }
 
 .voice-countdown {
   width: 100%;
@@ -280,6 +280,23 @@
   font-size: 0.8rem;
   color: #555;
   border-top: 1px solid #222;
+}
+
+/* ---- Phone input (mobile) ---- */
+.phone-input {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.05rem;
+  background: #0D0D1A;
+  border: 2px solid #333;
+  border-radius: 10px;
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.phone-input:focus {
+  border-color: var(--color-voice);
+  outline: none;
 }
 
 /* ---- Country selector ---- */
@@ -308,6 +325,6 @@
 }
 
 .country-select:focus {
-  border-color: #FFD700;
+  border-color: #BCC940;
   outline: none;
 }

@@ -7,6 +7,11 @@ import '../styles/client.css';
 
 const logoAuxiah = '/logoauxiah.png';
 
+// Detect mobile/touch device (constant for the session)
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+  navigator.userAgent
+) || navigator.maxTouchPoints > 0;
+
 const TYPES = [
   { key: 'ASISTENCIA', icon: '🆘', label: 'ASISTENCIA' },
   { key: 'EMERGENCIA', icon: '⚠️', label: 'EMERGENCIA' },
@@ -43,6 +48,8 @@ export default function ClientPage() {
   const [toast, setToast] = useState(null);
   const [status, setStatus] = useState('Conectando…');
   const [locationLoading, setLocationLoading] = useState(false);
+  const [hasSent, setHasSent] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   useEffect(() => {
     setStatus(connected ? '✅ Conectado al servidor AUXIAH' : '⚠️ Sin conexión — reconectando…');
@@ -68,16 +75,40 @@ export default function ClientPage() {
       showToast('⚠️ Sin conexión al servidor. Reintentando…', 'error');
       return;
     }
+
+    // Build the message: append phone number on mobile
+    let finalMessage = message.trim();
+    if (isMobile) {
+      const phone = phoneNumber.trim();
+      if (phone) {
+        finalMessage = finalMessage
+          ? `${finalMessage} | 📱 Tel: ${phone}`
+          : `📱 Tel: ${phone}`;
+      }
+    }
+
+    if (hasSent) {
+      // Already sent a request in this session — send only a toast message to monitors
+      send({
+        type: 'toast',
+        message: finalMessage,
+      });
+      setMessage('');
+      showToast('📨 Mensaje enviado al monitor', 'info');
+      return;
+    }
+
     send({
       type: 'request',
       requestType: selectedType,
-      message: message.trim(),
+      message: finalMessage,
       country,
       location,
     });
     setMessage('');
+    setHasSent(true);
     setStatus(`📡 Solicitud de ${selectedType} enviada`);
-  }, [selectedType, message, location, connected, send, showToast]);
+  }, [selectedType, message, location, connected, send, showToast, hasSent, phoneNumber, country]);
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -223,6 +254,16 @@ export default function ClientPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
+          {isMobile && (
+            <input
+              className="phone-input"
+              type="tel"
+              placeholder="📱 Tu número de celular…"
+              aria-label="Número de celular"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+          )}
           <div className="voice-row">
             <button
               className={`btn-voice ${isRecording ? 'recording' : ''}`}

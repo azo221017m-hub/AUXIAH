@@ -50,8 +50,8 @@
 .monitor-page header h1 {
   font-size: 1.3rem;
   letter-spacing: 3px;
-  color: #FFD700;
-  text-shadow: 0 2px 6px rgba(255,215,0,0.4);
+  color: #BCC940;
+  text-shadow: 0 2px 6px rgba(188,201,64,0.4);
 }
 
 .monitor-status {
@@ -103,7 +103,7 @@
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: #FFD700;
+  color: #BCC940;
 }
 
 .filter-bar {
@@ -245,7 +245,7 @@
   padding: 6px 14px;
   font-size: 0.8rem;
   font-weight: 700;
-  background: #FFD700;
+  background: #BCC940;
   color: #0D0D1A;
   border: none;
   border-radius: 20px;
@@ -292,7 +292,7 @@
 
 .audit-header h2 {
   font-size: 1.1rem;
-  color: #FFD700;
+  color: #BCC940;
   letter-spacing: 2px;
 }
 
@@ -349,7 +349,7 @@
 
 .audit-filter-group input:focus,
 .audit-filter-group select:focus {
-  border-color: #FFD700;
+  border-color: #BCC940;
   outline: none;
 }
 
@@ -357,7 +357,7 @@
   padding: 8px 18px;
   font-size: 0.8rem;
   font-weight: 700;
-  background: #FFD700;
+  background: #BCC940;
   color: #0D0D1A;
   border: none;
   border-radius: 8px;
@@ -395,7 +395,7 @@
   position: sticky;
   top: 0;
   background: #0A0A14;
-  color: #FFD700;
+  color: #BCC940;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 0.72rem;
@@ -462,7 +462,7 @@
 }
 
 .estatus-asistiendo {
-  background: #FFD700;
+  background: #BCC940;
   color: #0D0D1A;
 }
 
@@ -502,7 +502,7 @@
 }
 
 .context-menu-btn.ctx-asistiendo:hover {
-  background: rgba(255, 215, 0, 0.15);
+  background: rgba(188, 201, 64, 0.15);
 }
 
 .context-menu-btn.ctx-terminado:hover {
@@ -547,7 +547,7 @@
 
 .helper-modal-header h2 {
   font-size: 1.2rem;
-  color: #FFD700;
+  color: #BCC940;
   letter-spacing: 2px;
   margin-bottom: 6px;
 }
@@ -589,7 +589,7 @@
 }
 
 .helper-field input:focus {
-  border-color: #FFD700;
+  border-color: #BCC940;
   outline: none;
 }
 
@@ -620,7 +620,7 @@
   padding: 4px 12px;
   border-radius: 16px;
   font-size: 0.78rem;
-  color: #FFD700;
+  color: #BCC940;
   border: 1px solid #2a2a4a;
 }
 
@@ -657,7 +657,7 @@
 
 .archive-modal-header h2 {
   font-size: 1.1rem;
-  color: #FFD700;
+  color: #BCC940;
   letter-spacing: 2px;
 }
 
@@ -689,7 +689,7 @@
 }
 
 .archive-modal-body textarea:focus {
-  border-color: #FFD700;
+  border-color: #BCC940;
   outline: none;
 }
 
@@ -713,12 +713,12 @@
 
 /* ---- Updated status badges for DB enum values ---- */
 .estatus-atendiendo {
-  background: #FFD700;
+  background: #BCC940;
   color: #0D0D1A;
 }
 
 /* ---- Distance display on card ---- */
 .req-card-distance {
-  color: #FFD700;
+  color: #BCC940;
   font-weight: 700;
 }
