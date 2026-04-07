@@ -7,6 +7,11 @@ import '../styles/client.css';
 
 const logoAuxiah = '/logoauxiah.png';
 
+// Detect mobile/touch device (constant for the session)
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+  navigator.userAgent
+) || navigator.maxTouchPoints > 0;
+
 const TYPES = [
   { key: 'ASISTENCIA', icon: '🆘', label: 'ASISTENCIA' },
   { key: 'EMERGENCIA', icon: '⚠️', label: 'EMERGENCIA' },
@@ -46,11 +51,6 @@ export default function ClientPage() {
   const [hasSent, setHasSent] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
 
-  // Detect mobile device
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
-
   useEffect(() => {
     setStatus(connected ? '✅ Conectado al servidor AUXIAH' : '⚠️ Sin conexión — reconectando…');
   }, [connected]);
@@ -78,10 +78,13 @@ export default function ClientPage() {
 
     // Build the message: append phone number on mobile
     let finalMessage = message.trim();
-    if (isMobile && phoneNumber.trim()) {
-      finalMessage = finalMessage
-        ? `${finalMessage} | 📱 Tel: ${phoneNumber.trim()}`
-        : `📱 Tel: ${phoneNumber.trim()}`;
+    if (isMobile) {
+      const phone = phoneNumber.trim();
+      if (phone) {
+        finalMessage = finalMessage
+          ? `${finalMessage} | 📱 Tel: ${phone}`
+          : `📱 Tel: ${phone}`;
+      }
     }
 
     if (hasSent) {
@@ -105,7 +108,7 @@ export default function ClientPage() {
     setMessage('');
     setHasSent(true);
     setStatus(`📡 Solicitud de ${selectedType} enviada`);
-  }, [selectedType, message, location, connected, send, showToast, hasSent, isMobile, phoneNumber]);
+  }, [selectedType, message, location, connected, send, showToast, hasSent, phoneNumber, country]);
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
