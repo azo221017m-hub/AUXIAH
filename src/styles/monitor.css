@@ -716,3 +716,9 @@
   background: #FFD700;
   color: #0D0D1A;
 }
+
+/* ---- Distance display on card ---- */
+.req-card-distance {
+  color: #FFD700;
+  font-weight: 700;
+}

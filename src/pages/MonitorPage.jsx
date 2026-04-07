@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import useWebSocket from '../hooks/useWebSocket';
 import 'leaflet/dist/leaflet.css';
@@ -32,6 +32,25 @@ function formatTime(iso) {
   } catch {
     return iso;
   }
+}
+
+/** Calculate distance in meters between two [lat, lng] points using Haversine formula */
+function haversineDistance(pos1, pos2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 6371000; // Earth radius in meters
+  const dLat = toRad(pos2[0] - pos1[0]);
+  const dLng = toRad(pos2[1] - pos1[1]);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(pos1[0])) * Math.cos(toRad(pos2[0])) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/** Format distance for display */
+function formatDistance(meters) {
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
 }
 
 function createIcon(requestType) {
@@ -92,6 +111,10 @@ export default function MonitorPage() {
   const [monitorPos, setMonitorPos] = useState([19.4326, -99.1332]);
   const [flyTarget, setFlyTarget] = useState(null);
   const newIdsRef = useRef(new Set());
+
+  // Route state for displaying path from monitor to incident
+  const [routeCoords, setRouteCoords] = useState(null);
+  const [routeLoading, setRouteLoading] = useState(false);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState(null);
@@ -196,11 +219,31 @@ export default function MonitorPage() {
     fetchAuditData(auditFilterCountry, auditFilterType);
   }, [fetchAuditData, auditFilterCountry, auditFilterType]);
 
-  const handleCardClick = useCallback((req) => {
+  const handleCardClick = useCallback(async (req) => {
     if (req.location) {
       setFlyTarget([req.location.lat, req.location.lng]);
+
+      // Fetch route from OSRM
+      setRouteLoading(true);
+      setRouteCoords(null);
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${monitorPos[1]},${monitorPos[0]};${req.location.lng},${req.location.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.routes && data.routes.length > 0) {
+          // GeoJSON coordinates are [lng, lat], convert to [lat, lng] for Leaflet
+          const coords = data.routes[0].geometry.coordinates.map((c) => [c[1], c[0]]);
+          setRouteCoords(coords);
+        }
+      } catch (err) {
+        console.error('Error fetching route:', err);
+        // Fallback: draw a straight line
+        setRouteCoords([monitorPos, [req.location.lat, req.location.lng]]);
+      } finally {
+        setRouteLoading(false);
+      }
     }
-  }, []);
+  }, [monitorPos]);
 
   // Context menu: right-click on a card
   const handleCardContextMenu = useCallback((e, req) => {
@@ -424,6 +467,14 @@ export default function MonitorPage() {
                 );
               })}
 
+            {/* Route polyline from monitor to selected incident */}
+            {routeCoords && (
+              <Polyline
+                positions={routeCoords}
+                pathOptions={{ color: '#FFD700', weight: 4, opacity: 0.85, dashArray: '10, 8' }}
+              />
+            )}
+
             <FlyTo position={flyTarget} />
           </MapContainer>
         </div>
@@ -457,6 +508,9 @@ export default function MonitorPage() {
               const cfg = TYPE_CONFIG[r.requestType] || {};
               const safeType = TYPE_CONFIG[r.requestType] ? r.requestType : 'UNKNOWN';
               const estatus = r.estatus || 'ABIERTO';
+              const distance = r.location
+                ? haversineDistance(monitorPos, [r.location.lat, r.location.lng])
+                : null;
               return (
                 <div
                   key={r.id}
@@ -477,6 +531,9 @@ export default function MonitorPage() {
                     {r.location
                       ? ` | 📍 ${r.location.lat.toFixed(5)}, ${r.location.lng.toFixed(5)}`
                       : ' | 📍 Sin ubicación'}
+                    {distance !== null && (
+                      <span className="req-card-distance"> | 📏 {formatDistance(distance)}</span>
+                    )}
                   </div>
                 </div>
               );
