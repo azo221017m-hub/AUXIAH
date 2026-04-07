@@ -47,10 +47,26 @@ pool.getConnection()
     console.error('❌ MySQL connection error:', err.message);
   });
 
-// ---- Status mapping helpers ----
-// DB enum: ABIERTO | ATENDIENDO | TERMINADO
-const STATUS_TO_DB = { Abierto: 'ABIERTO', Asistiendo: 'ATENDIENDO', Terminado: 'TERMINADO' };
-const STATUS_FROM_DB = { ABIERTO: 'ABIERTO', ATENDIENDO: 'ATENDIENDO', TERMINADO: 'TERMINADO' };
+// ---- Simple in-memory rate limiter ----
+function createRateLimiter(windowMs, maxRequests) {
+  const hits = new Map();
+  return (req, res, next) => {
+    const key = req.ip;
+    const now = Date.now();
+    const record = hits.get(key);
+    if (!record || now - record.start > windowMs) {
+      hits.set(key, { start: now, count: 1 });
+      return next();
+    }
+    record.count++;
+    if (record.count > maxRequests) {
+      return res.status(429).json({ error: 'Demasiadas solicitudes, intenta más tarde' });
+    }
+    next();
+  };
+}
+
+const apiLimiter = createRateLimiter(60 * 1000, 60); // 60 requests per minute
 
 /** Convert a DB row to the API/WebSocket object format */
 function rowToRequest(row) {
@@ -75,7 +91,7 @@ app.use(express.static(path.join(__dirname, 'dist')));
 app.use(express.json());
 
 // ---- REST API: Get all incidents (audit) ----
-app.get('/api/solicitudes', async (req, res) => {
+app.get('/api/solicitudes', apiLimiter, async (req, res) => {
   try {
     let sql = 'SELECT * FROM auxiah_tblincidentes';
     const conditions = [];
@@ -105,7 +121,7 @@ app.get('/api/solicitudes', async (req, res) => {
 });
 
 // ---- REST API: Create a new incident ----
-app.post('/api/incidentes', async (req, res) => {
+app.post('/api/incidentes', apiLimiter, async (req, res) => {
   try {
     const { requestType, message, country, location } = req.body;
     const lat = location?.lat ?? null;
@@ -144,7 +160,7 @@ app.post('/api/incidentes', async (req, res) => {
 });
 
 // ---- REST API: Update incident status ----
-app.put('/api/incidentes/:id/estatus', async (req, res) => {
+app.put('/api/incidentes/:id/estatus', apiLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const { estatus } = req.body;
@@ -179,7 +195,7 @@ app.put('/api/incidentes/:id/estatus', async (req, res) => {
 });
 
 // ---- REST API: Update support info (alias + contact) ----
-app.put('/api/incidentes/:id/apoyo', async (req, res) => {
+app.put('/api/incidentes/:id/apoyo', apiLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const { aliasapoyo, contactoapoyo } = req.body;
@@ -198,7 +214,7 @@ app.put('/api/incidentes/:id/apoyo', async (req, res) => {
 });
 
 // ---- REST API: Archive incident (set infodeapoyo + TERMINADO) ----
-app.put('/api/incidentes/:id/archivar', async (req, res) => {
+app.put('/api/incidentes/:id/archivar', apiLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const { infodeapoyo } = req.body;

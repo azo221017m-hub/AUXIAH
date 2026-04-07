@@ -241,7 +241,7 @@ export default function MonitorPage() {
       prev.map((r) => (r.id === id ? { ...r, estatus } : r))
     );
     setContextMenu(null);
-  }, [send, helperReady, helperAlias, helperPhone, requests]);
+  }, [helperReady, helperAlias, helperPhone, requests]);
 
   // Handle archive (Terminado) modal submit
   const handleArchiveSubmit = useCallback(async () => {
