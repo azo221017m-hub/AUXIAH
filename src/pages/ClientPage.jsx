@@ -9,8 +9,8 @@ const logoAuxiah = '/logoauxiah.png';
 
 const TYPES = [
   { key: 'ASISTENCIA', icon: '🆘', label: 'ASISTENCIA' },
-  { key: 'EMERGENCIA', icon: '🚨', label: 'EMERGENCIA' },
-  { key: 'URGENCIA', icon: '⚠️', label: 'URGENCIA' },
+  { key: 'EMERGENCIA', icon: '⚠️', label: 'EMERGENCIA' },
+  { key: 'URGENCIA', icon: '🚨', label: 'URGENCIA' },
 ];
 
 export default function ClientPage() {
@@ -211,7 +211,7 @@ export default function ClientPage() {
         <Link to="/monitor" style={{ color: '#555', textDecoration: 'none' }}>
           🖥 Monitor AUXIAH
         </Link>
-        &nbsp;|&nbsp; AUXIAH © 2024 — Auxilio Humano con Inteligencia Artificial
+        &nbsp;|&nbsp; AUXIAH © 2026 — Auxilio Humano con Inteligencia Artificial
       </footer>
     </div>
   );
