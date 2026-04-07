@@ -106,6 +106,10 @@ export default function MonitorPage() {
   const [archiveModal, setArchiveModal] = useState(null); // { id, requestType }
   const [archiveInfo, setArchiveInfo] = useState('');
 
+  // Environment-based admin credentials for audit access
+  const envAlias = import.meta.env.HELPER_ALIAS || '';
+  const envPhone = import.meta.env.HELPER_TELEFONO || '';
+
   // Audit panel state
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditData, setAuditData] = useState([]);
