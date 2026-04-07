@@ -51,11 +51,18 @@ export default function ClientPage() {
   const [toast, setToast] = useState(null);
   const [status, setStatus] = useState('Conectando…');
   const [locationLoading, setLocationLoading] = useState(false);
-  const [hasSent, setHasSent] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [locationHighlight, setLocationHighlight] = useState(false);
   const locationBtnRef = useRef(null);
   const sentTimerRef = useRef(null);
+  const highlightTimerRef = useRef(null);
+
+  // Clean up highlight timer on unmount
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setStatus(connected ? '✅ Conectado al servidor AUXIAH' : '⚠️ Sin conexión — reconectando…');
@@ -80,7 +87,8 @@ export default function ClientPage() {
     if (!hasLocation) {
       // Location is required — highlight the button and announce with voice
       setLocationHighlight(true);
-      setTimeout(() => setLocationHighlight(false), 4000);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => setLocationHighlight(false), 4000);
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(
           'De Click en la ubicación actual, para saber su ubicación, gracias.'
@@ -108,9 +116,8 @@ export default function ClientPage() {
       }
     }
 
-    // If 3+ minutes have passed since the last send, treat as a new request
-    if (hasSent && sentTimerRef.current && Date.now() - sentTimerRef.current < REQUEST_EXPIRY_MS) {
-      // Still within the 3-minute window — send only a toast message to monitors
+    // If a request was sent recently (within 3 minutes), send only a toast update
+    if (sentTimerRef.current && Date.now() - sentTimerRef.current < REQUEST_EXPIRY_MS) {
       send({
         type: 'toast',
         message: finalMessage,
@@ -120,6 +127,7 @@ export default function ClientPage() {
       return;
     }
 
+    // Send a new request (first time, after 3-min expiry, or after page reload)
     send({
       type: 'request',
       requestType: selectedType,
@@ -128,10 +136,9 @@ export default function ClientPage() {
       location,
     });
     setMessage('');
-    setHasSent(true);
     sentTimerRef.current = Date.now();
     setStatus(`📡 Solicitud de ${selectedType} enviada`);
-  }, [selectedType, message, location, connected, send, showToast, hasSent, phoneNumber, country, hasLocation]);
+  }, [selectedType, message, location, connected, send, showToast, phoneNumber, country, hasLocation]);
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
