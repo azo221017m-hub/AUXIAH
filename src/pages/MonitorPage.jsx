@@ -229,6 +229,7 @@ export default function MonitorPage() {
       try {
         const url = `https://router.project-osrm.org/route/v1/driving/${monitorPos[1]},${monitorPos[0]};${req.location.lng},${req.location.lat}?overview=full&geometries=geojson`;
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`OSRM responded with ${res.status}`);
         const data = await res.json();
         if (data.routes && data.routes.length > 0) {
           // GeoJSON coordinates are [lng, lat], convert to [lat, lng] for Leaflet
