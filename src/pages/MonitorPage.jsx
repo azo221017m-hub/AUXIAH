@@ -355,7 +355,7 @@ export default function MonitorPage() {
           </h1>
         </div>
         <div className="monitor-status">
-          {helperAlias === 'sold40.420' && helperPhone === '5527618631' && (
+          {envAlias && envPhone && helperAlias === envAlias && helperPhone === envPhone && (
             <button className="btn-audit" onClick={handleOpenAudit} title="Ver auditoría de solicitudes">
               📋 Auditoría
             </button>
