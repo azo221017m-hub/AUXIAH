@@ -103,7 +103,7 @@ export default function ClientPage() {
         // Reverse geocode to auto-detect country
         fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${loc.lat}&lon=${loc.lng}&format=json`,
-          { headers: { 'Accept-Language': 'es' } }
+          { headers: { 'Accept-Language': 'es', 'User-Agent': 'AUXIAH/1.0 (auxiah-app)' } }
         )
           .then((res) => res.json())
           .then((data) => {
