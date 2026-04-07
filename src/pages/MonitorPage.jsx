@@ -154,7 +154,7 @@ export default function MonitorPage() {
           <img src={logoAuxiah} alt="AUXIAH Logo" className="header-logo" />
           <h1>
             <Link to="/" style={{ color: '#FFD700', textDecoration: 'none' }}>
-              Monitor AUXIAH
+              Monitor AUXIAH - Tlapalehuiliztli kal (casa de ayuda)
             </Link>
           </h1>
         </div>
