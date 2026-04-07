@@ -1,16 +1,23 @@
 /**
  * AUXIAH - Auxilio Humano con Inteligencia Artificial
- * WebSocket + HTTP server
+ * WebSocket + HTTP server with MySQL persistence
  *
  * In production, serves the Vite-built React app from /dist.
  * In development, use `npm run dev` (Vite) + `npm run server` separately.
+ *
+ * Environment variables for DB connection:
+ *   DB_HOST (default: localhost)
+ *   DB_PORT (default: 3306)
+ *   DB_USER
+ *   DB_PASSWORD
+ *   DB_NAME
  */
 
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
-const fs = require('fs');
+const mysql = require('mysql2/promise');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,70 +25,235 @@ const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 3000;
 
-// ---- Persistent JSON audit file ----
-const DATA_DIR = path.join(__dirname, 'data');
-const SOLICITUDES_FILE = path.join(DATA_DIR, 'solicitudes.json');
+// ---- MySQL connection pool ----
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT, 10) || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'auxiah',
+  waitForConnections: true,
+  connectionLimit: 10,
+  charset: 'utf8mb4',
+});
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+// Verify DB connection on startup
+pool.getConnection()
+  .then((conn) => {
+    console.log('✅ MySQL connected to database:', process.env.DB_NAME || 'auxiah');
+    conn.release();
+  })
+  .catch((err) => {
+    console.error('❌ MySQL connection error:', err.message);
+  });
+
+// ---- Simple in-memory rate limiter ----
+function createRateLimiter(windowMs, maxRequests) {
+  const hits = new Map();
+  return (req, res, next) => {
+    const key = req.ip;
+    const now = Date.now();
+    const record = hits.get(key);
+    if (!record || now - record.start > windowMs) {
+      hits.set(key, { start: now, count: 1 });
+      return next();
+    }
+    record.count++;
+    if (record.count > maxRequests) {
+      return res.status(429).json({ error: 'Demasiadas solicitudes, intenta más tarde' });
+    }
+    next();
+  };
 }
 
-// Load existing solicitudes from disk (or start empty)
-let allSolicitudes = [];
-try {
-  if (fs.existsSync(SOLICITUDES_FILE)) {
-    allSolicitudes = JSON.parse(fs.readFileSync(SOLICITUDES_FILE, 'utf-8'));
-  }
-} catch (err) {
-  console.error('Error reading solicitudes.json, starting fresh:', err.message);
-  allSolicitudes = [];
-}
+const apiLimiter = createRateLimiter(60 * 1000, 60); // 60 requests per minute
 
-function saveSolicitudes() {
-  try {
-    fs.writeFileSync(SOLICITUDES_FILE, JSON.stringify(allSolicitudes, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing solicitudes.json:', err.message);
-  }
+/** Convert a DB row to the API/WebSocket object format */
+function rowToRequest(row) {
+  return {
+    id: row.idincidente,
+    requestType: row.tipodeayuda,
+    message: row.mensaje || '',
+    country: row.paisincidente || '',
+    location: (row.latitud != null && row.longitud != null)
+      ? { lat: parseFloat(row.latitud), lng: parseFloat(row.longitud) }
+      : null,
+    timestamp: row.fechacreacion ? new Date(row.fechacreacion).toISOString() : '',
+    estatus: row.estatusincidente || 'ABIERTO',
+    aliasapoyo: row.aliasapoyo || '',
+    contactoapoyo: row.contactoapoyo || '',
+    infodeapoyo: row.infodeapoyo || '',
+  };
 }
 
 // Serve the Vite build output
 app.use(express.static(path.join(__dirname, 'dist')));
 app.use(express.json());
 
-// ---- REST API: Audit endpoint ----
-app.get('/api/solicitudes', (req, res) => {
-  let results = allSolicitudes;
+// ---- REST API: Get all incidents (audit) ----
+app.get('/api/solicitudes', apiLimiter, async (req, res) => {
+  try {
+    let sql = 'SELECT * FROM auxiah_tblincidentes';
+    const conditions = [];
+    const params = [];
 
-  // Filter by country (case-insensitive partial match)
-  if (req.query.country) {
-    const country = req.query.country.toLowerCase();
-    results = results.filter(
-      (r) => r.country && r.country.toLowerCase().includes(country)
+    if (req.query.country) {
+      conditions.push('paisincidente LIKE ?');
+      params.push(`%${req.query.country}%`);
+    }
+    if (req.query.requestType) {
+      conditions.push('tipodeayuda = ?');
+      params.push(req.query.requestType.toUpperCase());
+    }
+
+    if (conditions.length > 0) {
+      sql += ' WHERE ' + conditions.join(' AND ');
+    }
+    sql += ' ORDER BY fechacreacion DESC';
+
+    const [rows] = await pool.query(sql, params);
+    const solicitudes = rows.map(rowToRequest);
+    res.json({ total: solicitudes.length, solicitudes });
+  } catch (err) {
+    console.error('Error fetching solicitudes:', err.message);
+    res.status(500).json({ error: 'Error al consultar incidentes' });
+  }
+});
+
+// ---- REST API: Create a new incident ----
+app.post('/api/incidentes', apiLimiter, async (req, res) => {
+  try {
+    const { requestType, message, country, location } = req.body;
+    const lat = location?.lat ?? null;
+    const lng = location?.lng ?? null;
+    const now = new Date();
+
+    const [result] = await pool.query(
+      `INSERT INTO auxiah_tblincidentes
+         (tipodeayuda, latitud, longitud, mensaje, estatusincidente, paisincidente, fechacreacion, fechaactualizacion)
+       VALUES (?, ?, ?, ?, 'ABIERTO', ?, ?, ?)`,
+      [requestType, lat, lng, message || '', country || '', now, now]
     );
-  }
 
-  // Filter by requestType (exact match, case-insensitive)
-  if (req.query.requestType) {
-    const type = req.query.requestType.toUpperCase();
-    results = results.filter((r) => r.requestType === type);
-  }
+    const newId = result.insertId;
 
-  res.json({ total: results.length, solicitudes: results });
+    // Fetch the full row
+    const [rows] = await pool.query(
+      'SELECT * FROM auxiah_tblincidentes WHERE idincidente = ?',
+      [newId]
+    );
+    const request = rowToRequest(rows[0]);
+
+    // Broadcast to all connected monitors
+    const payload = JSON.stringify({ type: 'new_request', request });
+    for (const monitor of monitors) {
+      if (monitor.readyState === WebSocket.OPEN) {
+        monitor.send(payload);
+      }
+    }
+
+    res.status(201).json({ id: newId, request });
+  } catch (err) {
+    console.error('Error creating incident:', err.message);
+    res.status(500).json({ error: 'Error al crear incidente' });
+  }
+});
+
+// ---- REST API: Update incident status ----
+app.put('/api/incidentes/:id/estatus', apiLimiter, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estatus } = req.body;
+    const validStatuses = ['ABIERTO', 'ATENDIENDO', 'TERMINADO'];
+    if (!validStatuses.includes(estatus)) {
+      return res.status(400).json({ error: 'Estatus inválido' });
+    }
+
+    const now = new Date();
+    await pool.query(
+      'UPDATE auxiah_tblincidentes SET estatusincidente = ?, fechaactualizacion = ? WHERE idincidente = ?',
+      [estatus, now, id]
+    );
+
+    // Broadcast status update to all monitors
+    const statusPayload = JSON.stringify({
+      type: 'status_updated',
+      id: parseInt(id, 10),
+      estatus,
+    });
+    for (const monitor of monitors) {
+      if (monitor.readyState === WebSocket.OPEN) {
+        monitor.send(statusPayload);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating status:', err.message);
+    res.status(500).json({ error: 'Error al actualizar estatus' });
+  }
+});
+
+// ---- REST API: Update support info (alias + contact) ----
+app.put('/api/incidentes/:id/apoyo', apiLimiter, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { aliasapoyo, contactoapoyo } = req.body;
+    const now = new Date();
+
+    await pool.query(
+      'UPDATE auxiah_tblincidentes SET aliasapoyo = ?, contactoapoyo = ?, fechaactualizacion = ? WHERE idincidente = ?',
+      [aliasapoyo || '', contactoapoyo || '', now, id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating support info:', err.message);
+    res.status(500).json({ error: 'Error al actualizar info de apoyo' });
+  }
+});
+
+// ---- REST API: Archive incident (set infodeapoyo + TERMINADO) ----
+app.put('/api/incidentes/:id/archivar', apiLimiter, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { infodeapoyo } = req.body;
+    const now = new Date();
+
+    await pool.query(
+      `UPDATE auxiah_tblincidentes
+         SET infodeapoyo = ?, estatusincidente = 'TERMINADO', fechaactualizacion = ?
+       WHERE idincidente = ?`,
+      [infodeapoyo || '', now, id]
+    );
+
+    // Broadcast status update to monitors
+    const statusPayload = JSON.stringify({
+      type: 'status_updated',
+      id: parseInt(id, 10),
+      estatus: 'TERMINADO',
+    });
+    for (const monitor of monitors) {
+      if (monitor.readyState === WebSocket.OPEN) {
+        monitor.send(statusPayload);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error archiving incident:', err.message);
+    res.status(500).json({ error: 'Error al archivar incidente' });
+  }
 });
 
 // Track connected clients by role
 const monitors = new Set();
 const clients = new Set();
 
-// In-memory store of active requests (for new monitors connecting)
-const activeRequests = [];
-
 wss.on('connection', (ws) => {
   ws.role = null;
 
-  ws.on('message', (rawData) => {
+  ws.on('message', async (rawData) => {
     let msg;
     try {
       msg = JSON.parse(rawData);
@@ -95,8 +267,17 @@ wss.on('connection', (ws) => {
         ws.role = msg.role; // 'client' or 'monitor'
         if (msg.role === 'monitor') {
           monitors.add(ws);
-          // Send all active requests to the newly connected monitor
-          ws.send(JSON.stringify({ type: 'history', requests: activeRequests }));
+          // Send active (non-TERMINADO) requests from DB to newly connected monitor
+          try {
+            const [rows] = await pool.query(
+              "SELECT * FROM auxiah_tblincidentes WHERE estatusincidente != 'TERMINADO' ORDER BY fechacreacion DESC LIMIT 100"
+            );
+            const requests = rows.map(rowToRequest);
+            ws.send(JSON.stringify({ type: 'history', requests }));
+          } catch (err) {
+            console.error('Error loading history:', err.message);
+            ws.send(JSON.stringify({ type: 'history', requests: [] }));
+          }
         } else {
           clients.add(ws);
         }
@@ -104,66 +285,73 @@ wss.on('connection', (ws) => {
 
       // A client sends an emergency/assistance/urgency request
       case 'request': {
-        const request = {
-          id: Date.now(),
-          requestType: msg.requestType, // ASISTENCIA | EMERGENCIA | URGENCIA
-          message: msg.message || '',
-          country: msg.country || '',
-          location: msg.location || null,
-          timestamp: new Date().toISOString(),
-          estatus: 'Abierto'
-        };
-        activeRequests.push(request);
-        // Keep only last 100 requests in memory
-        if (activeRequests.length > 100) activeRequests.shift();
+        try {
+          const lat = msg.location?.lat ?? null;
+          const lng = msg.location?.lng ?? null;
+          const now = new Date();
 
-        // Persist to audit JSON
-        allSolicitudes.push(request);
-        saveSolicitudes();
+          const [result] = await pool.query(
+            `INSERT INTO auxiah_tblincidentes
+               (tipodeayuda, latitud, longitud, mensaje, estatusincidente, paisincidente, fechacreacion, fechaactualizacion)
+             VALUES (?, ?, ?, ?, 'ABIERTO', ?, ?, ?)`,
+            [msg.requestType, lat, lng, msg.message || '', msg.country || '', now, now]
+          );
 
-        // Broadcast to all connected monitors
-        const payload = JSON.stringify({ type: 'new_request', request });
-        for (const monitor of monitors) {
-          if (monitor.readyState === WebSocket.OPEN) {
-            monitor.send(payload);
+          const newId = result.insertId;
+          const [rows] = await pool.query(
+            'SELECT * FROM auxiah_tblincidentes WHERE idincidente = ?',
+            [newId]
+          );
+          const request = rowToRequest(rows[0]);
+
+          // Broadcast to all connected monitors
+          const payload = JSON.stringify({ type: 'new_request', request });
+          for (const monitor of monitors) {
+            if (monitor.readyState === WebSocket.OPEN) {
+              monitor.send(payload);
+            }
           }
-        }
-        // Acknowledge to the client
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ack', id: request.id }));
+
+          // Acknowledge to the client
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ack', id: newId }));
+          }
+        } catch (err) {
+          console.error('Error inserting incident via WS:', err.message);
         }
         break;
       }
 
       // A monitor updates the status of a request
       case 'update_status': {
-        const { id, estatus } = msg;
-        const validStatuses = ['Abierto', 'Asistiendo', 'Terminado'];
+        const { id, estatus, aliasapoyo, contactoapoyo } = msg;
+        const validStatuses = ['ABIERTO', 'ATENDIENDO', 'TERMINADO'];
         if (!id || !validStatuses.includes(estatus)) break;
 
-        // Update in activeRequests
-        const activeReq = activeRequests.find((r) => r.id === id);
-        if (activeReq) activeReq.estatus = estatus;
-
-        // Update in persisted solicitudes
-        const persistedReq = allSolicitudes.find((r) => r.id === id);
-        if (persistedReq) {
-          persistedReq.estatus = estatus;
-          saveSolicitudes();
-        }
-
-        // Remove from activeRequests if Terminado
-        if (estatus === 'Terminado') {
-          const idx = activeRequests.findIndex((r) => r.id === id);
-          if (idx !== -1) activeRequests.splice(idx, 1);
-        }
-
-        // Broadcast status update to all monitors
-        const statusPayload = JSON.stringify({ type: 'status_updated', id, estatus });
-        for (const monitor of monitors) {
-          if (monitor.readyState === WebSocket.OPEN) {
-            monitor.send(statusPayload);
+        try {
+          const now = new Date();
+          // Update status and optionally the support info
+          if (aliasapoyo || contactoapoyo) {
+            await pool.query(
+              'UPDATE auxiah_tblincidentes SET estatusincidente = ?, aliasapoyo = ?, contactoapoyo = ?, fechaactualizacion = ? WHERE idincidente = ?',
+              [estatus, aliasapoyo || '', contactoapoyo || '', now, id]
+            );
+          } else {
+            await pool.query(
+              'UPDATE auxiah_tblincidentes SET estatusincidente = ?, fechaactualizacion = ? WHERE idincidente = ?',
+              [estatus, now, id]
+            );
           }
+
+          // Broadcast status update to all monitors
+          const statusPayload = JSON.stringify({ type: 'status_updated', id, estatus });
+          for (const monitor of monitors) {
+            if (monitor.readyState === WebSocket.OPEN) {
+              monitor.send(statusPayload);
+            }
+          }
+        } catch (err) {
+          console.error('Error updating status via WS:', err.message);
         }
         break;
       }
