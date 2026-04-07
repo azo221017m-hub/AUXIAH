@@ -32,6 +32,13 @@
   border-bottom: 3px solid #333;
 }
 
+.client-page .header-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  margin-bottom: 6px;
+}
+
 .client-page header h1 {
   font-size: 2rem;
   letter-spacing: 3px;

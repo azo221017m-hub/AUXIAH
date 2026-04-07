@@ -6,6 +6,8 @@ import useWebSocket from '../hooks/useWebSocket';
 import 'leaflet/dist/leaflet.css';
 import '../styles/monitor.css';
 
+const logoAuxiah = '/logoauxiah.png';
+
 const TYPE_CONFIG = {
   ASISTENCIA: { color: '#2196F3', emoji: '🆘', label: 'Asistencia' },
   EMERGENCIA: { color: '#F44336', emoji: '🚨', label: 'Emergencia' },
@@ -148,11 +150,14 @@ export default function MonitorPage() {
     <div className="monitor-page">
       {/* Header */}
       <header>
-        <h1>
-          <Link to="/" style={{ color: '#FFD700', textDecoration: 'none' }}>
-            🖥 Monitor AUXIAH
-          </Link>
-        </h1>
+        <div className="header-title">
+          <img src={logoAuxiah} alt="AUXIAH Logo" className="header-logo" />
+          <h1>
+            <Link to="/" style={{ color: '#FFD700', textDecoration: 'none' }}>
+              Monitor AUXIAH
+            </Link>
+          </h1>
+        </div>
         <div className="monitor-status">
           <span className={`conn-indicator ${connected ? 'connected' : ''}`} title="Estado de conexión" />
           <span>{connected ? 'Conectado' : 'Reconectando…'}</span>

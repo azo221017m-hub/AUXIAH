@@ -5,6 +5,8 @@ import useVoiceRecognition from '../hooks/useVoiceRecognition';
 import Toast from '../components/Toast';
 import '../styles/client.css';
 
+const logoAuxiah = '/logoauxiah.png';
+
 const TYPES = [
   { key: 'ASISTENCIA', icon: '🆘', label: 'ASISTENCIA' },
   { key: 'EMERGENCIA', icon: '🚨', label: 'EMERGENCIA' },
@@ -113,7 +115,8 @@ export default function ClientPage() {
     <div className="client-page">
       {/* Header */}
       <header>
-        <h1>🆘 AUXIAH</h1>
+        <img src={logoAuxiah} alt="AUXIAH Logo" className="header-logo" />
+        <h1>AUXIAH</h1>
         <p>Auxilio Humano con Inteligencia Artificial</p>
       </header>
 
