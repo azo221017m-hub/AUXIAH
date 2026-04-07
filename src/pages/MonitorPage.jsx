@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, CircleMarker, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import useWebSocket from '../hooks/useWebSocket';
+import Toast from '../components/Toast';
 import 'leaflet/dist/leaflet.css';
 import '../styles/monitor.css';
 
@@ -129,6 +130,14 @@ export default function MonitorPage() {
   const [archiveModal, setArchiveModal] = useState(null); // { id, requestType }
   const [archiveInfo, setArchiveInfo] = useState('');
 
+  // Toast notification state
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((msg, type) => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  }, []);
+
   // Environment-based admin credentials for audit access
   const envAlias = import.meta.env.HELPER_ALIAS || '';
   const envPhone = import.meta.env.HELPER_TELEFONO || '';
@@ -183,8 +192,10 @@ export default function MonitorPage() {
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, estatus } : r))
       );
+    } else if (lastMessage.type === 'toast') {
+      showToast(`💬 ${lastMessage.message || 'Mensaje del cliente'}`, 'info');
     }
-  }, [lastMessage]);
+  }, [lastMessage, showToast]);
 
   // Reset unread count on window focus
   useEffect(() => {
@@ -405,7 +416,7 @@ export default function MonitorPage() {
         <div className="header-title">
           <img src={logoAuxiah} alt="AUXIAH Logo" className="header-logo" />
           <h1>
-            <Link to="/" style={{ color: '#FFD700', textDecoration: 'none' }}>
+            <Link to="/" style={{ color: '#BCC940', textDecoration: 'none' }}>
               Monitor AUXIAH *  Yancuic Tlachialoyan (Observatorio Moderno)
             </Link>
           </h1>
@@ -447,7 +458,7 @@ export default function MonitorPage() {
             <CircleMarker
               center={monitorPos}
               radius={12}
-              pathOptions={{ fillColor: '#FFD700', color: '#fff', weight: 3, fillOpacity: 0.95 }}
+              pathOptions={{ fillColor: '#BCC940', color: '#fff', weight: 3, fillOpacity: 0.95 }}
             >
               <Popup>
                 <strong>📍 Monitor AUXIAH</strong>
@@ -483,7 +494,7 @@ export default function MonitorPage() {
             {routeCoords && (
               <Polyline
                 positions={routeCoords}
-                pathOptions={{ color: '#FFD700', weight: 4, opacity: 0.85, dashArray: '10, 8' }}
+                pathOptions={{ color: '#BCC940', weight: 4, opacity: 0.85, dashArray: '10, 8' }}
               />
             )}
 
@@ -698,6 +709,9 @@ export default function MonitorPage() {
           </button>
         </div>
       )}
+
+      {/* Toast */}
+      <Toast toast={toast} />
     </div>
   );
 }

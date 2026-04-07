@@ -43,6 +43,13 @@ export default function ClientPage() {
   const [toast, setToast] = useState(null);
   const [status, setStatus] = useState('Conectando…');
   const [locationLoading, setLocationLoading] = useState(false);
+  const [hasSent, setHasSent] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+
+  // Detect mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
 
   useEffect(() => {
     setStatus(connected ? '✅ Conectado al servidor AUXIAH' : '⚠️ Sin conexión — reconectando…');
@@ -68,16 +75,37 @@ export default function ClientPage() {
       showToast('⚠️ Sin conexión al servidor. Reintentando…', 'error');
       return;
     }
+
+    // Build the message: append phone number on mobile
+    let finalMessage = message.trim();
+    if (isMobile && phoneNumber.trim()) {
+      finalMessage = finalMessage
+        ? `${finalMessage} | 📱 Tel: ${phoneNumber.trim()}`
+        : `📱 Tel: ${phoneNumber.trim()}`;
+    }
+
+    if (hasSent) {
+      // Already sent a request in this session — send only a toast message to monitors
+      send({
+        type: 'toast',
+        message: finalMessage,
+      });
+      setMessage('');
+      showToast('📨 Mensaje enviado al monitor', 'info');
+      return;
+    }
+
     send({
       type: 'request',
       requestType: selectedType,
-      message: message.trim(),
+      message: finalMessage,
       country,
       location,
     });
     setMessage('');
+    setHasSent(true);
     setStatus(`📡 Solicitud de ${selectedType} enviada`);
-  }, [selectedType, message, location, connected, send, showToast]);
+  }, [selectedType, message, location, connected, send, showToast, hasSent, isMobile, phoneNumber]);
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -223,6 +251,16 @@ export default function ClientPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
+          {isMobile && (
+            <input
+              className="phone-input"
+              type="tel"
+              placeholder="📱 Tu número de celular…"
+              aria-label="Número de celular"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+          )}
           <div className="voice-row">
             <button
               className={`btn-voice ${isRecording ? 'recording' : ''}`}
