@@ -97,11 +97,9 @@ export default function MonitorPage() {
   const [contextMenu, setContextMenu] = useState(null);
 
   // Helper identification modal state (shown on page load)
-  const envAlias = import.meta.env.HELPER_ALIAS || '';
-  const envPhone = import.meta.env.HELPER_TELEFONO || '';
   const [helperModalOpen, setHelperModalOpen] = useState(true);
-  const [helperAlias, setHelperAlias] = useState(envAlias);
-  const [helperPhone, setHelperPhone] = useState(envPhone);
+  const [helperAlias, setHelperAlias] = useState('');
+  const [helperPhone, setHelperPhone] = useState('');
   const [helperReady, setHelperReady] = useState(false);
 
   // Terminado (archive) modal state
