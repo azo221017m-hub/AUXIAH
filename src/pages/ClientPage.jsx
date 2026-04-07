@@ -13,11 +13,20 @@ const TYPES = [
   { key: 'URGENCIA', icon: '🚨', label: 'URGENCIA' },
 ];
 
+const COUNTRIES = [
+  'México', 'Guatemala', 'Honduras', 'El Salvador', 'Nicaragua',
+  'Costa Rica', 'Panamá', 'Colombia', 'Venezuela', 'Ecuador',
+  'Perú', 'Bolivia', 'Chile', 'Argentina', 'Uruguay',
+  'Paraguay', 'Brasil', 'Cuba', 'República Dominicana',
+  'Puerto Rico', 'España', 'Estados Unidos', 'Otro',
+];
+
 export default function ClientPage() {
   const { connected, lastMessage, send } = useWebSocket('client');
   const { isRecording, countdown, isSupported, start, stop } = useVoiceRecognition();
 
   const [selectedType, setSelectedType] = useState(null);
+  const [country, setCountry] = useState('');
   const [location, setLocation] = useState(null);
   const [message, setMessage] = useState('');
   const [locationStatus, setLocationStatus] = useState('📍 Ubicación no capturada');
@@ -54,6 +63,7 @@ export default function ClientPage() {
       type: 'request',
       requestType: selectedType,
       message: message.trim(),
+      country,
       location,
     });
     setMessage('');
@@ -147,6 +157,19 @@ export default function ClientPage() {
               {t.label}
             </button>
           ))}
+          <label className="country-label" htmlFor="country-select">🌎 País</label>
+          <select
+            id="country-select"
+            className="country-select"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            aria-label="Selecciona tu país"
+          >
+            <option value="">— Selecciona tu país —</option>
+            {COUNTRIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </section>
 
         {/* Section 2: Geolocation */}

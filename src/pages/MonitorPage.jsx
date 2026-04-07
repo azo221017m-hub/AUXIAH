@@ -93,6 +93,13 @@ export default function MonitorPage() {
   const [flyTarget, setFlyTarget] = useState(null);
   const newIdsRef = useRef(new Set());
 
+  // Audit panel state
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditData, setAuditData] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditFilterCountry, setAuditFilterCountry] = useState('');
+  const [auditFilterType, setAuditFilterType] = useState('');
+
   // Watch monitor's own geolocation
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -130,6 +137,36 @@ export default function MonitorPage() {
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
+  // Fetch audit data from REST API
+  const fetchAuditData = useCallback(async (country = '', requestType = '') => {
+    setAuditLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (country) params.set('country', country);
+      if (requestType) params.set('requestType', requestType);
+      const url = `/api/solicitudes${params.toString() ? '?' + params.toString() : ''}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setAuditData(data.solicitudes || []);
+    } catch (err) {
+      console.error('Error fetching audit data:', err);
+      setAuditData([]);
+    } finally {
+      setAuditLoading(false);
+    }
+  }, []);
+
+  const handleOpenAudit = useCallback(() => {
+    setAuditOpen(true);
+    setAuditFilterCountry('');
+    setAuditFilterType('');
+    fetchAuditData();
+  }, [fetchAuditData]);
+
+  const handleAuditFilter = useCallback(() => {
+    fetchAuditData(auditFilterCountry, auditFilterType);
+  }, [fetchAuditData, auditFilterCountry, auditFilterType]);
+
   const handleCardClick = useCallback((req) => {
     if (req.location) {
       setFlyTarget([req.location.lat, req.location.lng]);
@@ -159,6 +196,9 @@ export default function MonitorPage() {
           </h1>
         </div>
         <div className="monitor-status">
+          <button className="btn-audit" onClick={handleOpenAudit} title="Ver auditoría de solicitudes">
+            📋 Auditoría
+          </button>
           <span className={`conn-indicator ${connected ? 'connected' : ''}`} title="Estado de conexión" />
           <span>{connected ? 'Conectado' : 'Reconectando…'}</span>
           &nbsp;|&nbsp;
@@ -272,6 +312,90 @@ export default function MonitorPage() {
           </div>
         </aside>
       </div>
+
+      {/* Audit Modal */}
+      {auditOpen && (
+        <div className="audit-overlay" onClick={() => setAuditOpen(false)}>
+          <div className="audit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="audit-header">
+              <h2>📋 Auditoría de Solicitudes</h2>
+              <button className="audit-close" onClick={() => setAuditOpen(false)} aria-label="Cerrar auditoría">✕</button>
+            </div>
+
+            <div className="audit-filters">
+              <div className="audit-filter-group">
+                <label htmlFor="audit-country">🌎 País:</label>
+                <input
+                  id="audit-country"
+                  type="text"
+                  placeholder="Filtrar por país…"
+                  value={auditFilterCountry}
+                  onChange={(e) => setAuditFilterCountry(e.target.value)}
+                />
+              </div>
+              <div className="audit-filter-group">
+                <label htmlFor="audit-type">🏷️ Tipo de Ayuda:</label>
+                <select
+                  id="audit-type"
+                  value={auditFilterType}
+                  onChange={(e) => setAuditFilterType(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="ASISTENCIA">🆘 Asistencia</option>
+                  <option value="EMERGENCIA">🚨 Emergencia</option>
+                  <option value="URGENCIA">⚠️ Urgencia</option>
+                </select>
+              </div>
+              <button className="audit-apply-btn" onClick={handleAuditFilter}>🔍 Filtrar</button>
+            </div>
+
+            <div className="audit-count">
+              {auditLoading ? 'Cargando…' : `${auditData.length} registro(s) encontrado(s)`}
+            </div>
+
+            <div className="audit-table-wrap">
+              <table className="audit-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Fecha / Hora</th>
+                    <th>Tipo</th>
+                    <th>País</th>
+                    <th>Mensaje</th>
+                    <th>Ubicación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditData.length === 0 && !auditLoading && (
+                    <tr>
+                      <td colSpan="6" className="audit-empty">Sin registros</td>
+                    </tr>
+                  )}
+                  {auditData.map((r) => {
+                    const cfg = TYPE_CONFIG[r.requestType] || {};
+                    return (
+                      <tr key={r.id}>
+                        <td className="audit-id">{r.id}</td>
+                        <td>{r.timestamp ? new Date(r.timestamp).toLocaleString('es-MX') : '—'}</td>
+                        <td style={{ color: cfg.color || '#fff' }}>
+                          {cfg.emoji || ''} {r.requestType}
+                        </td>
+                        <td>{r.country || '—'}</td>
+                        <td className="audit-msg">{r.message || <em>Sin mensaje</em>}</td>
+                        <td>
+                          {r.location
+                            ? `${r.location.lat.toFixed(5)}, ${r.location.lng.toFixed(5)}`
+                            : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
