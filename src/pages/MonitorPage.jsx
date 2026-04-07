@@ -352,9 +352,11 @@ export default function MonitorPage() {
           </h1>
         </div>
         <div className="monitor-status">
-          <button className="btn-audit" onClick={handleOpenAudit} title="Ver auditoría de solicitudes">
-            📋 Auditoría
-          </button>
+          {helperAlias === 'sold40.420' && helperPhone === '5527618631' && (
+            <button className="btn-audit" onClick={handleOpenAudit} title="Ver auditoría de solicitudes">
+              📋 Auditoría
+            </button>
+          )}
           <span className={`conn-indicator ${connected ? 'connected' : ''}`} title="Estado de conexión" />
           <span>{connected ? 'Conectado' : 'Reconectando…'}</span>
           &nbsp;|&nbsp;
