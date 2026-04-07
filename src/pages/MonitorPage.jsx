@@ -99,11 +99,10 @@ export default function MonitorPage() {
   // Helper identification modal state (shown on page load)
   const envAlias = import.meta.env.HELPER_ALIAS || '';
   const envPhone = import.meta.env.HELPER_TELEFONO || '';
-  const hasEnvHelper = !!(envAlias && envPhone);
-  const [helperModalOpen, setHelperModalOpen] = useState(!hasEnvHelper);
+  const [helperModalOpen, setHelperModalOpen] = useState(true);
   const [helperAlias, setHelperAlias] = useState(envAlias);
   const [helperPhone, setHelperPhone] = useState(envPhone);
-  const [helperReady, setHelperReady] = useState(hasEnvHelper);
+  const [helperReady, setHelperReady] = useState(false);
 
   // Terminado (archive) modal state
   const [archiveModal, setArchiveModal] = useState(null); // { id, requestType }
@@ -338,7 +337,7 @@ export default function MonitorPage() {
               disabled={!helperAlias.trim() || !helperPhone.trim()}
               onClick={handleHelperSubmit}
             >
-              🤝 AYUDAR
+              🤝 COMENZAR a AYUDAR
             </button>
           </div>
         </div>
