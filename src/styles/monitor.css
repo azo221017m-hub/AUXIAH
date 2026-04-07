@@ -508,3 +508,211 @@
 .context-menu-btn.ctx-terminado:hover {
   background: rgba(76, 175, 80, 0.15);
 }
+
+/* ---- Helper Identification Modal ---- */
+.helper-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 30000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.helper-modal {
+  background: var(--color-surface);
+  border-radius: 20px;
+  width: 90vw;
+  max-width: 420px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.helper-modal-header {
+  background: #0A0A14;
+  text-align: center;
+  padding: 24px 20px 16px;
+  border-bottom: 2px solid #2a2a4a;
+}
+
+.helper-modal-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.helper-modal-header h2 {
+  font-size: 1.2rem;
+  color: #FFD700;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.helper-modal-header p {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.helper-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.helper-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.helper-field label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.helper-field input {
+  padding: 12px 14px;
+  font-size: 1rem;
+  background: #0D0D1A;
+  color: var(--color-text);
+  border: 2px solid #2a2a4a;
+  border-radius: 10px;
+  font-family: inherit;
+}
+
+.helper-field input:focus {
+  border-color: #FFD700;
+  outline: none;
+}
+
+.helper-modal-btn {
+  margin: 0 20px 20px;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: opacity 0.2s, transform 0.12s;
+}
+
+.helper-modal-btn:hover { opacity: 0.9; }
+.helper-modal-btn:active { transform: scale(0.97); }
+.helper-modal-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.helper-info-badge {
+  background: #1a1a3a;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.78rem;
+  color: #FFD700;
+  border: 1px solid #2a2a4a;
+}
+
+/* ---- Archive (Terminado) Modal ---- */
+.archive-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 25000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archive-modal {
+  background: var(--color-surface);
+  border-radius: 16px;
+  width: 90vw;
+  max-width: 480px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.archive-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #0A0A14;
+  border-bottom: 2px solid #2a2a4a;
+}
+
+.archive-modal-header h2 {
+  font-size: 1.1rem;
+  color: #FFD700;
+  letter-spacing: 2px;
+}
+
+.archive-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.archive-modal-body label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.archive-modal-body textarea {
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  background: #0D0D1A;
+  color: var(--color-text);
+  border: 2px solid #2a2a4a;
+  border-radius: 10px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.archive-modal-body textarea:focus {
+  border-color: #FFD700;
+  outline: none;
+}
+
+.archive-modal-btn {
+  margin: 0 20px 20px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  background: #FF9800;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: opacity 0.2s, transform 0.12s;
+}
+
+.archive-modal-btn:hover { opacity: 0.9; }
+.archive-modal-btn:active { transform: scale(0.97); }
+
+/* ---- Updated status badges for DB enum values ---- */
+.estatus-atendiendo {
+  background: #FFD700;
+  color: #0D0D1A;
+}

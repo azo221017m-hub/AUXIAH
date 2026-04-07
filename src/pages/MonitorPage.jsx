@@ -96,6 +96,16 @@ export default function MonitorPage() {
   // Context menu state
   const [contextMenu, setContextMenu] = useState(null);
 
+  // Helper identification modal state (shown on page load)
+  const [helperModalOpen, setHelperModalOpen] = useState(true);
+  const [helperAlias, setHelperAlias] = useState('');
+  const [helperPhone, setHelperPhone] = useState('');
+  const [helperReady, setHelperReady] = useState(false);
+
+  // Terminado (archive) modal state
+  const [archiveModal, setArchiveModal] = useState(null); // { id, requestType }
+  const [archiveInfo, setArchiveInfo] = useState('');
+
   // Audit panel state
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditData, setAuditData] = useState([]);
@@ -145,6 +155,13 @@ export default function MonitorPage() {
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
+  // Handle helper modal submit
+  const handleHelperSubmit = useCallback(() => {
+    if (!helperAlias.trim() || !helperPhone.trim()) return;
+    setHelperReady(true);
+    setHelperModalOpen(false);
+  }, [helperAlias, helperPhone]);
+
   // Fetch audit data from REST API
   const fetchAuditData = useCallback(async (country = '', requestType = '') => {
     setAuditLoading(true);
@@ -187,14 +204,78 @@ export default function MonitorPage() {
     setContextMenu({ x: e.clientX, y: e.clientY, request: req });
   }, []);
 
-  const handleStatusChange = useCallback((id, estatus) => {
-    send({ type: 'update_status', id, estatus });
+  const handleStatusChange = useCallback(async (id, estatus) => {
+    // When changing to TERMINADO, show the archive modal instead
+    if (estatus === 'TERMINADO') {
+      const req = requests.find((r) => r.id === id);
+      setArchiveModal({ id, requestType: req?.requestType || '' });
+      setArchiveInfo('');
+      setContextMenu(null);
+      return;
+    }
+
+    // For ATENDIENDO: update via REST API + save helper info
+    try {
+      await fetch(`/api/incidentes/${id}/estatus`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estatus }),
+      });
+      // Also save helper alias/phone if available
+      if (helperReady && helperAlias.trim()) {
+        await fetch(`/api/incidentes/${id}/apoyo`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            aliasapoyo: helperAlias.trim(),
+            contactoapoyo: helperPhone.trim(),
+          }),
+        });
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+    }
+
     // Optimistic update
     setRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, estatus } : r))
     );
     setContextMenu(null);
-  }, [send]);
+  }, [send, helperReady, helperAlias, helperPhone, requests]);
+
+  // Handle archive (Terminado) modal submit
+  const handleArchiveSubmit = useCallback(async () => {
+    if (!archiveModal) return;
+    const { id } = archiveModal;
+
+    try {
+      await fetch(`/api/incidentes/${id}/archivar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ infodeapoyo: archiveInfo.trim() }),
+      });
+      // Also save helper info if available
+      if (helperReady && helperAlias.trim()) {
+        await fetch(`/api/incidentes/${id}/apoyo`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            aliasapoyo: helperAlias.trim(),
+            contactoapoyo: helperPhone.trim(),
+          }),
+        });
+      }
+    } catch (err) {
+      console.error('Error archiving incident:', err);
+    }
+
+    // Optimistic update
+    setRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, estatus: 'TERMINADO' } : r))
+    );
+    setArchiveModal(null);
+    setArchiveInfo('');
+  }, [archiveModal, archiveInfo, helperReady, helperAlias, helperPhone]);
 
   // Close context menu on click anywhere
   useEffect(() => {
@@ -203,8 +284,8 @@ export default function MonitorPage() {
     return () => window.removeEventListener('click', close);
   }, []);
 
-  // Filter out "Terminado" requests, then apply type filter
-  const visibleRequests = requests.filter((r) => r.estatus !== 'Terminado');
+  // Filter out "TERMINADO" requests, then apply type filter
+  const visibleRequests = requests.filter((r) => r.estatus !== 'TERMINADO');
   const filteredRequests =
     activeFilter === 'ALL' ? visibleRequests : visibleRequests.filter((r) => r.requestType === activeFilter);
 
@@ -217,6 +298,49 @@ export default function MonitorPage() {
 
   return (
     <div className="monitor-page">
+      {/* Helper Identification Modal */}
+      {helperModalOpen && (
+        <div className="helper-overlay">
+          <div className="helper-modal">
+            <div className="helper-modal-header">
+              <img src={logoAuxiah} alt="AUXIAH" className="helper-modal-logo" />
+              <h2>Identificación de Apoyo</h2>
+              <p>Ingresa tus datos para poder ayudar a las personas que lo necesitan</p>
+            </div>
+            <div className="helper-modal-body">
+              <div className="helper-field">
+                <label htmlFor="helper-alias">👤 Alias</label>
+                <input
+                  id="helper-alias"
+                  type="text"
+                  placeholder="Tu nombre o alias…"
+                  value={helperAlias}
+                  onChange={(e) => setHelperAlias(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="helper-field">
+                <label htmlFor="helper-phone">📞 Teléfono</label>
+                <input
+                  id="helper-phone"
+                  type="tel"
+                  placeholder="Tu número de contacto…"
+                  value={helperPhone}
+                  onChange={(e) => setHelperPhone(e.target.value)}
+                />
+              </div>
+            </div>
+            <button
+              className="helper-modal-btn"
+              disabled={!helperAlias.trim() || !helperPhone.trim()}
+              onClick={handleHelperSubmit}
+            >
+              🤝 AYUDAR
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header>
         <div className="header-title">
@@ -238,6 +362,11 @@ export default function MonitorPage() {
             {unreadCount}
           </span>
           solicitudes nuevas
+          {helperReady && (
+            <span className="helper-info-badge" title={`Apoyo: ${helperAlias} | ${helperPhone}`}>
+              👤 {helperAlias}
+            </span>
+          )}
         </div>
       </header>
 
@@ -266,7 +395,7 @@ export default function MonitorPage() {
               </Popup>
             </CircleMarker>
 
-            {/* Request markers */}
+            {/* Request markers from DB lat/lng */}
             {visibleRequests
               .filter((r) => r.location)
               .map((r) => {
@@ -321,7 +450,7 @@ export default function MonitorPage() {
             {[...filteredRequests].reverse().map((r) => {
               const cfg = TYPE_CONFIG[r.requestType] || {};
               const safeType = TYPE_CONFIG[r.requestType] ? r.requestType : 'UNKNOWN';
-              const estatus = r.estatus || 'Abierto';
+              const estatus = r.estatus || 'ABIERTO';
               return (
                 <div
                   key={r.id}
@@ -401,12 +530,14 @@ export default function MonitorPage() {
                     <th>País</th>
                     <th>Mensaje</th>
                     <th>Ubicación</th>
+                    <th>Apoyo</th>
+                    <th>Info de Apoyo</th>
                   </tr>
                 </thead>
                 <tbody>
                   {auditData.length === 0 && !auditLoading && (
                     <tr>
-                      <td colSpan="7" className="audit-empty">Sin registros</td>
+                      <td colSpan="9" className="audit-empty">Sin registros</td>
                     </tr>
                   )}
                   {auditData.map((r) => {
@@ -420,7 +551,7 @@ export default function MonitorPage() {
                         </td>
                         <td>
                           <span className={`estatus-badge estatus-${(r.estatus || 'abierto').toLowerCase()}`}>
-                            {r.estatus || 'Abierto'}
+                            {r.estatus || 'ABIERTO'}
                           </span>
                         </td>
                         <td>{r.country || '—'}</td>
@@ -430,6 +561,8 @@ export default function MonitorPage() {
                             ? `${r.location.lat.toFixed(5)}, ${r.location.lng.toFixed(5)}`
                             : '—'}
                         </td>
+                        <td>{r.aliasapoyo ? `${r.aliasapoyo} | ${r.contactoapoyo}` : '—'}</td>
+                        <td className="audit-msg">{r.infodeapoyo || '—'}</td>
                       </tr>
                     );
                   })}
@@ -439,6 +572,36 @@ export default function MonitorPage() {
           </div>
         </div>
       )}
+
+      {/* Archive (Terminado) Modal */}
+      {archiveModal && (
+        <div className="archive-overlay" onClick={() => setArchiveModal(null)}>
+          <div className="archive-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="archive-modal-header">
+              <h2>📝 Archivar Incidente</h2>
+              <button className="audit-close" onClick={() => setArchiveModal(null)} aria-label="Cerrar">✕</button>
+            </div>
+            <div className="archive-modal-body">
+              <label htmlFor="archive-info">¿Cómo se ayudó?</label>
+              <textarea
+                id="archive-info"
+                placeholder="Describe cómo se brindó la ayuda…"
+                rows={4}
+                value={archiveInfo}
+                onChange={(e) => setArchiveInfo(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <button
+              className="archive-modal-btn"
+              onClick={handleArchiveSubmit}
+            >
+              📦 Archivar Incidente
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Context Menu */}
       {contextMenu && (
         <div
@@ -448,13 +611,13 @@ export default function MonitorPage() {
         >
           <button
             className="context-menu-btn ctx-asistiendo"
-            onClick={() => handleStatusChange(contextMenu.request.id, 'Asistiendo')}
+            onClick={() => handleStatusChange(contextMenu.request.id, 'ATENDIENDO')}
           >
-            🟡 Asistiendo
+            🟡 Atendiendo
           </button>
           <button
             className="context-menu-btn ctx-terminado"
-            onClick={() => handleStatusChange(contextMenu.request.id, 'Terminado')}
+            onClick={() => handleStatusChange(contextMenu.request.id, 'TERMINADO')}
           >
             ✅ Terminado
           </button>
