@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useWebSocket from '../hooks/useWebSocket';
 import useVoiceRecognition from '../hooks/useVoiceRecognition';
@@ -11,6 +11,9 @@ const logoAuxiah = '/logoauxiah.png';
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
   navigator.userAgent
 ) || navigator.maxTouchPoints > 0;
+
+/** Milliseconds before a sent request expires and a new one can be sent */
+const REQUEST_EXPIRY_MS = 3 * 60 * 1000; // 3 minutes
 
 const TYPES = [
   { key: 'ASISTENCIA', icon: '🆘', label: 'ASISTENCIA' },
@@ -48,8 +51,18 @@ export default function ClientPage() {
   const [toast, setToast] = useState(null);
   const [status, setStatus] = useState('Conectando…');
   const [locationLoading, setLocationLoading] = useState(false);
-  const [hasSent, setHasSent] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [locationHighlight, setLocationHighlight] = useState(false);
+  const locationBtnRef = useRef(null);
+  const sentTimerRef = useRef(null);
+  const highlightTimerRef = useRef(null);
+
+  // Clean up highlight timer on unmount
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setStatus(connected ? '✅ Conectado al servidor AUXIAH' : '⚠️ Sin conexión — reconectando…');
@@ -71,6 +84,22 @@ export default function ClientPage() {
       showToast('⚠️ Selecciona un tipo: ASISTENCIA, EMERGENCIA o URGENCIA', 'error');
       return;
     }
+    if (!hasLocation) {
+      // Location is required — highlight the button and announce with voice
+      setLocationHighlight(true);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => setLocationHighlight(false), 4000);
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(
+          'De Click en la ubicación actual, para saber su ubicación, gracias.'
+        );
+        utterance.lang = 'es-MX';
+        window.speechSynthesis.speak(utterance);
+      }
+      showToast('⚠️ Se requiere tu ubicación actual para enviar la solicitud', 'error');
+      locationBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if (!connected) {
       showToast('⚠️ Sin conexión al servidor. Reintentando…', 'error');
       return;
@@ -87,8 +116,8 @@ export default function ClientPage() {
       }
     }
 
-    if (hasSent) {
-      // Already sent a request in this session — send only a toast message to monitors
+    // If a request was sent recently (within 3 minutes), send only a toast update
+    if (sentTimerRef.current && Date.now() - sentTimerRef.current < REQUEST_EXPIRY_MS) {
       send({
         type: 'toast',
         message: finalMessage,
@@ -98,6 +127,7 @@ export default function ClientPage() {
       return;
     }
 
+    // Send a new request (first time, after 3-min expiry, or after page reload)
     send({
       type: 'request',
       requestType: selectedType,
@@ -106,9 +136,9 @@ export default function ClientPage() {
       location,
     });
     setMessage('');
-    setHasSent(true);
+    sentTimerRef.current = Date.now();
     setStatus(`📡 Solicitud de ${selectedType} enviada`);
-  }, [selectedType, message, location, connected, send, showToast, hasSent, phoneNumber, country]);
+  }, [selectedType, message, location, connected, send, showToast, phoneNumber, country, hasLocation]);
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -226,7 +256,8 @@ export default function ClientPage() {
         <section className="section-card" aria-labelledby="sec2-title">
           <h2 className="section-title" id="sec2-title">2 · Mi Ubicación</h2>
           <button
-            className="btn-location"
+            ref={locationBtnRef}
+            className={`btn-location${locationHighlight ? ' highlight' : ''}`}
             aria-label="Obtener ubicación actual"
             disabled={locationLoading}
             onClick={handleGetLocation}
