@@ -1,7 +1,7 @@
 # AUXIAH
 **Auxilio Humano con Inteligencia Artificial**
 
-Sistema web de ayuda por geolocalización en tiempo real.
+Sistema web de ayuda por geolocalización en tiempo real, construido con **Vite + React**.
 
 ---
 
@@ -14,10 +14,10 @@ Diseñada para usuarios con capacidades diferentes. Interfaz accesible con boton
 - **Sección 2 – Ubicación:** Captura la ubicación GPS actual del usuario
 - **Sección 3 – Mensaje:** Campo de texto + grabación de voz de 10 segundos con envío automático al Monitor
 
-### 🖥 Página del Monitor AUXIAH (`/monitor.html`)
+### 🖥 Página del Monitor AUXIAH (`/monitor`)
 Panel de monitoreo en tiempo real para el equipo de respuesta.
 
-- Mapa interactivo (Leaflet.js) centrado en la ubicación del monitorista
+- Mapa interactivo (React Leaflet) centrado en la ubicación del monitorista
 - Íconos en el mapa para cada solicitud de `ASISTENCIA` | `EMERGENCIA` | `URGENCIA`
 - Lista filtrable de solicitudes en tiempo real
 - Actualización automática vía **WebSocket**
@@ -28,9 +28,11 @@ Panel de monitoreo en tiempo real para el equipo de respuesta.
 
 | Capa | Tecnología |
 |------|-----------|
+| Frontend | React 19 + Vite |
+| Routing | React Router |
 | Backend | Node.js + Express |
 | Tiempo real | WebSocket (`ws`) |
-| Mapas | Leaflet.js (local) |
+| Mapas | React Leaflet |
 | Voz | Web Speech API (nativa del navegador) |
 | Geolocalización | Geolocation API (nativa del navegador) |
 
@@ -38,18 +40,53 @@ Panel de monitoreo en tiempo real para el equipo de respuesta.
 
 ## Instalación y Ejecución
 
+### Desarrollo
+
 ```bash
 # Instalar dependencias
 npm install
 
-# Iniciar el servidor
+# Iniciar Vite dev server (frontend)
+npm run dev
+
+# En otra terminal, iniciar el backend WebSocket
+npm run server
+```
+
+- Frontend (Vite): `http://localhost:5173`
+- Backend (WebSocket): `http://localhost:3000`
+
+### Producción
+
+```bash
+# Instalar dependencias y compilar
+npm install
+npm run build
+
+# Iniciar el servidor de producción
 npm start
 ```
 
 El servidor quedará disponible en `http://localhost:3000`.
 
 - Cliente: `http://localhost:3000/`
-- Monitor: `http://localhost:3000/monitor.html`
+- Monitor: `http://localhost:3000/monitor`
+
+---
+
+## Despliegue
+
+### Render
+El archivo `render.yaml` está configurado para desplegar automáticamente:
+- Build: `npm install && npm run build`
+- Start: `npm start`
+
+### Vercel
+El archivo `vercel.json` está configurado para desplegar como sitio estático con Vite:
+- Build: `npm install && npm run build`
+- Output: `dist/`
+
+> **Nota:** Vercel despliega solo el frontend estático. Para WebSocket en tiempo real, despliega el backend en Render u otro servicio con soporte WebSocket.
 
 ---
 

@@ -1,0 +1,61 @@
+/* =====================================================
+   AUXIAH - Global Styles (reset + shared)
+   ===================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #121212;
+  color: #F0F0F0;
+  font-size: 18px;
+}
+
+/* ---- Toast / Notification ---- */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #222;
+  color: #fff;
+  padding: 16px 28px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  opacity: 0;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  z-index: 9999;
+  max-width: 90vw;
+  text-align: center;
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast.success { border-left: 5px solid #4CAF50; }
+.toast.error   { border-left: 5px solid #F44336; }
+.toast.info    { border-left: 5px solid #2196F3; }
+
+/* ---- Connection indicator ---- */
+.conn-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #F44336;
+  margin-right: 6px;
+  vertical-align: middle;
+  transition: background 0.4s;
+}
+
+.conn-indicator.connected { background: #4CAF50; }

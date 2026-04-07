@@ -1,6 +1,9 @@
 /**
  * AUXIAH - Auxilio Humano con Inteligencia Artificial
  * WebSocket + HTTP server
+ *
+ * In production, serves the Vite-built React app from /dist.
+ * In development, use `npm run dev` (Vite) + `npm run server` separately.
  */
 
 const express = require('express');
@@ -14,8 +17,8 @@ const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from /public
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve the Vite build output
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Track connected clients by role
 const monitors = new Set();
@@ -90,8 +93,13 @@ wss.on('connection', (ws) => {
   });
 });
 
+// SPA fallback: serve index.html for any non-API routes (React Router)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 server.listen(PORT, () => {
   console.log(`AUXIAH server running at http://localhost:${PORT}`);
   console.log(`  Client page : http://localhost:${PORT}/`);
-  console.log(`  Monitor page: http://localhost:${PORT}/monitor.html`);
+  console.log(`  Monitor page: http://localhost:${PORT}/monitor`);
 });
