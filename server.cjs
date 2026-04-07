@@ -98,8 +98,9 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-server.listen(PORT, () => {
-  console.log(`AUXIAH server running at http://localhost:${PORT}`);
-  console.log(`  Client page : http://localhost:${PORT}/`);
-  console.log(`  Monitor page: http://localhost:${PORT}/monitor`);
+server.listen(PORT, '0.0.0.0', () => {
+  const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  console.log(`AUXIAH server running at ${baseUrl}`);
+  console.log(`  Client page : ${baseUrl}/`);
+  console.log(`  Monitor page: ${baseUrl}/monitor`);
 });
