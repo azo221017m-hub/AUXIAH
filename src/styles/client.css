@@ -3,12 +3,6 @@
    Designed for accessibility: large fonts, high contrast
    ===================================================== */
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 :root {
   --color-asistencia: #2196F3;
   --color-emergencia: #F44336;
@@ -24,37 +18,35 @@
   --shadow:           0 4px 24px rgba(0,0,0,0.5);
 }
 
-html, body {
-  height: 100%;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 18px;
+.client-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ---- Header ---- */
-header {
+.client-page header {
   background: #0D0D1A;
   text-align: center;
   padding: 18px 20px 14px;
   border-bottom: 3px solid #333;
 }
 
-header h1 {
+.client-page header h1 {
   font-size: 2rem;
   letter-spacing: 3px;
   color: #FFD700;
   text-shadow: 0 2px 8px rgba(255,215,0,0.4);
 }
 
-header p {
+.client-page header p {
   font-size: 0.95rem;
   color: var(--color-muted);
   margin-top: 4px;
 }
 
 /* ---- Status bar ---- */
-#status-bar {
+.status-bar {
   text-align: center;
   padding: 8px;
   font-size: 0.9rem;
@@ -73,6 +65,7 @@ header p {
   padding: 24px 20px;
   min-height: calc(100vh - 160px);
   align-items: start;
+  flex: 1;
 }
 
 @media (max-width: 900px) {
@@ -126,9 +119,7 @@ header p {
   color: #fff;
 }
 
-.btn-alert:active {
-  transform: scale(0.96);
-}
+.btn-alert:active { transform: scale(0.96); }
 
 .btn-alert:focus-visible {
   outline: 4px solid #FFD700;
@@ -139,9 +130,9 @@ header p {
   box-shadow: 0 0 0 4px #FFD700, 0 4px 16px rgba(0,0,0,0.4);
 }
 
-#btn-asistencia { background: var(--color-asistencia); }
-#btn-emergencia { background: var(--color-emergencia); }
-#btn-urgencia   { background: var(--color-urgencia); }
+.btn-asistencia { background: var(--color-asistencia); }
+.btn-emergencia { background: var(--color-emergencia); }
+.btn-urgencia   { background: var(--color-urgencia); }
 
 .btn-icon { font-size: 1.6rem; }
 
@@ -169,7 +160,7 @@ header p {
 .btn-location:active { transform: scale(0.96); }
 .btn-location:focus-visible { outline: 4px solid #FFD700; outline-offset: 3px; }
 
-#location-display {
+.location-display {
   background: #0D0D1A;
   border-radius: 10px;
   padding: 14px;
@@ -182,12 +173,10 @@ header p {
   line-height: 1.5;
 }
 
-#location-display.has-location {
-  color: var(--color-location);
-}
+.location-display.has-location { color: var(--color-location); }
 
 /* ---- Message / Voice section ---- */
-#message-area {
+.message-area {
   width: 100%;
   min-height: 100px;
   background: #0D0D1A;
@@ -200,7 +189,7 @@ header p {
   font-family: inherit;
 }
 
-#message-area:focus {
+.message-area:focus {
   border-color: var(--color-voice);
   outline: none;
 }
@@ -263,7 +252,7 @@ header p {
 .btn-send:active { transform: scale(0.96); }
 .btn-send:focus-visible { outline: 4px solid #FFD700; outline-offset: 3px; }
 
-#voice-countdown {
+.voice-countdown {
   width: 100%;
   text-align: center;
   font-size: 0.95rem;
@@ -271,58 +260,14 @@ header p {
   min-height: 24px;
 }
 
-#voice-countdown.active {
+.voice-countdown.active {
   color: var(--color-emergencia);
   font-weight: 700;
   font-size: 1.1rem;
 }
 
-/* ---- Toast / Notification ---- */
-#toast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: #222;
-  color: #fff;
-  padding: 16px 28px;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
-  opacity: 0;
-  transition: transform 0.35s ease, opacity 0.35s ease;
-  z-index: 9999;
-  max-width: 90vw;
-  text-align: center;
-  pointer-events: none;
-}
-
-#toast.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-}
-
-#toast.success { border-left: 5px solid #4CAF50; }
-#toast.error   { border-left: 5px solid #F44336; }
-#toast.info    { border-left: 5px solid #2196F3; }
-
-/* ---- Connection indicator ---- */
-#conn-indicator {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #F44336;
-  margin-right: 6px;
-  vertical-align: middle;
-  transition: background 0.4s;
-}
-
-#conn-indicator.connected { background: #4CAF50; }
-
 /* ---- Footer ---- */
-footer {
+.client-page footer {
   text-align: center;
   padding: 14px;
   font-size: 0.8rem;
