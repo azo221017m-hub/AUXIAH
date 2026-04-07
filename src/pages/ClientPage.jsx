@@ -188,19 +188,7 @@ export default function ClientPage() {
               {t.label}
             </button>
           ))}
-          <label className="country-label" htmlFor="country-select">🌎 País</label>
-          <select
-            id="country-select"
-            className="country-select"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            aria-label="Selecciona tu país"
-          >
-            <option value="">— Selecciona tu país —</option>
-            {COUNTRIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+          {/* Country select hidden – country is auto-detected via geolocation */}
         </section>
 
         {/* Section 2: Geolocation */}
