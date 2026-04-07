@@ -118,6 +118,7 @@ export default function ClientPage() {
         <img src={logoAuxiah} alt="AUXIAH Logo" className="header-logo" />
         <h1>AUXIAH</h1>
         <p>Auxilio Humano con Inteligencia Artificial</p>
+        <p> Tlapalehuiliztli kal (casa de ayuda) </p>
       </header>
 
       {/* Status bar */}
