@@ -11,8 +11,8 @@ const logoAuxiah = '/logoauxiah.png';
 
 const TYPE_CONFIG = {
   ASISTENCIA: { color: '#2196F3', emoji: '🆘', label: 'Asistencia' },
-  EMERGENCIA: { color: '#F44336', emoji: '🚨', label: 'Emergencia' },
-  URGENCIA: { color: '#FF9800', emoji: '⚠️', label: 'Urgencia' },
+  EMERGENCIA: { color: '#F44336', emoji: '⚠️', label: 'Emergencia' },
+  URGENCIA: { color: '#FF9800', emoji: '🚨', label: 'Urgencia' },
 };
 
 function escapeHtml(str) {
