@@ -581,7 +581,7 @@ export default function MonitorPage() {
         <div className="audit-overlay" onClick={() => setAuditOpen(false)}>
           <div className="audit-modal" onClick={(e) => e.stopPropagation()}>
             <div className="audit-header">
-              <h2>📋 Auditoría de Solicitudes</h2>
+              <h2>📋 Expedientes de Incidentes Termiandos</h2>
               <button className="audit-close" onClick={() => setAuditOpen(false)} aria-label="Cerrar auditoría">✕</button>
             </div>
 
