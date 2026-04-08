@@ -101,22 +101,15 @@ export default function ClientPage() {
       return;
     }
 
-    // Build the message: append phone number on mobile
+    // Build the message
     let finalMessage = message.trim();
-    if (isMobile) {
-      const phone = phoneNumber.trim();
-      if (phone) {
-        finalMessage = finalMessage
-          ? `${finalMessage} | 📱 Tel: ${phone}`
-          : `📱 Tel: ${phone}`;
-      }
-    }
 
-    // Always send a new request
+    // Always send a new request (telefono sent as separate field)
     send({
       type: 'request',
       requestType: selectedType,
       message: finalMessage,
+      telefono: phoneNumber.trim(),
       country,
       location,
     });
@@ -276,16 +269,15 @@ export default function ClientPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-          {isMobile && (
-            <input
-              className="phone-input"
-              type="tel"
-              placeholder="📱 Tu número de celular…"
-              aria-label="Número de celular"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-            />
-          )}
+          {/* Phone input — always visible, optional */}
+          <input
+            className="phone-input"
+            type="tel"
+            placeholder="📱 Tu número de celular (opcional)…"
+            aria-label="Número de celular"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+          />
           <div className="voice-row">
             <button
               className={`btn-voice ${isRecording ? 'recording' : ''}`}

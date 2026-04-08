@@ -90,6 +90,20 @@ El archivo `vercel.json` está configurado para desplegar como sitio estático c
 
 ---
 
+## Base de Datos
+
+### Migración: agregar campo teléfono de persona incidente
+
+Ejecutar el siguiente SQL en la base de datos para agregar el campo opcional de teléfono:
+
+```sql
+ALTER TABLE auxiah_tblincidentes
+  ADD COLUMN telefonopersonaincidente VARCHAR(45) DEFAULT NULL
+  AFTER paisincidente;
+```
+
+---
+
 ## Screenshots
 
 ### Cliente Especial

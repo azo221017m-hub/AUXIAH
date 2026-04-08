@@ -482,6 +482,12 @@ export default function MonitorPage() {
                         <br />
                         <em style={{ color: '#aaa', fontSize: '0.8em' }}>{formatTime(r.timestamp)}</em>
                         <br />
+                        {r.telefono && (
+                          <>
+                            <span style={{ color: '#4FC3F7' }}>📱 {r.telefono}</span>
+                            <br />
+                          </>
+                        )}
                         <br />
                         {r.message ? <span>{r.message}</span> : <span style={{ color: '#666' }}>Sin mensaje</span>}
                       </div>
@@ -549,6 +555,11 @@ export default function MonitorPage() {
                     </span>
                   </div>
                   <div className="req-card-msg">{r.message || <em>Sin mensaje</em>}</div>
+                  {r.telefono && (
+                    <div className="req-card-phone" style={{ color: '#4FC3F7', fontSize: '0.9em' }}>
+                      📱 {r.telefono}
+                    </div>
+                  )}
                   <div className="req-card-meta">
                     🕐 {formatTime(r.timestamp)}
                     {r.location
@@ -614,6 +625,7 @@ export default function MonitorPage() {
                     <th>Tipo</th>
                     <th>Estatus</th>
                     <th>País</th>
+                    <th>Teléfono</th>
                     <th>Mensaje</th>
                     <th>Ubicación</th>
                     <th>Apoyo</th>
@@ -623,7 +635,7 @@ export default function MonitorPage() {
                 <tbody>
                   {auditData.length === 0 && !auditLoading && (
                     <tr>
-                      <td colSpan="9" className="audit-empty">Sin registros</td>
+                      <td colSpan="10" className="audit-empty">Sin registros</td>
                     </tr>
                   )}
                   {auditData.map((r) => {
@@ -641,6 +653,7 @@ export default function MonitorPage() {
                           </span>
                         </td>
                         <td>{r.country || '—'}</td>
+                        <td>{r.telefono || '—'}</td>
                         <td className="audit-msg">{r.message || <em>Sin mensaje</em>}</td>
                         <td>
                           {r.location
