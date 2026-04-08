@@ -424,7 +424,7 @@ export default function MonitorPage() {
         <div className="monitor-status">
           {envAlias && envPhone && helperAlias === envAlias && helperPhone === envPhone && (
             <button className="btn-audit" onClick={handleOpenAudit} title="Ver auditoría de solicitudes">
-              📋 Auditoría
+              📋 Expediente
             </button>
           )}
           <span className={`conn-indicator ${connected ? 'connected' : ''}`} title="Estado de conexión" />
