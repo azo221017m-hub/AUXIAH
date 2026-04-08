@@ -362,8 +362,8 @@ export default function MonitorPage() {
   const filters = [
     { key: 'ALL', label: 'Todas', cls: 'f-all' },
     { key: 'ASISTENCIA', label: '🆘 Asistencia', cls: 'f-asistencia' },
-    { key: 'EMERGENCIA', label: '🚨 Emergencia', cls: 'f-emergencia' },
-    { key: 'URGENCIA', label: '⚠️ Urgencia', cls: 'f-urgencia' },
+    { key: 'EMERGENCIA', label: '⚠️ Emergencia', cls: 'f-emergencia' },
+    { key: 'URGENCIA', label: '🚨 Urgencia', cls: 'f-urgencia' },
   ];
 
   return (
@@ -605,8 +605,8 @@ export default function MonitorPage() {
                 >
                   <option value="">Todos</option>
                   <option value="ASISTENCIA">🆘 Asistencia</option>
-                  <option value="EMERGENCIA">🚨 Emergencia</option>
-                  <option value="URGENCIA">⚠️ Urgencia</option>
+                  <option value="EMERGENCIA">⚠️ Emergencia</option>
+                  <option value="URGENCIA">🚨 Urgencia</option>
                 </select>
               </div>
               <button className="audit-apply-btn" onClick={handleAuditFilter}>🔍 Filtrar</button>
