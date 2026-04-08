@@ -12,9 +12,6 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
   navigator.userAgent
 ) || navigator.maxTouchPoints > 0;
 
-/** Milliseconds before a sent request expires and a new one can be sent */
-const REQUEST_EXPIRY_MS = 3 * 60 * 1000; // 3 minutes
-
 const TYPES = [
   { key: 'ASISTENCIA', icon: '🆘', label: 'ASISTENCIA' },
   { key: 'EMERGENCIA', icon: '⚠️', label: 'EMERGENCIA' },
@@ -54,7 +51,6 @@ export default function ClientPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [locationHighlight, setLocationHighlight] = useState(false);
   const locationBtnRef = useRef(null);
-  const sentTimerRef = useRef(null);
   const highlightTimerRef = useRef(null);
 
   // Clean up highlight timer on unmount
@@ -116,18 +112,7 @@ export default function ClientPage() {
       }
     }
 
-    // If a request was sent recently (within 3 minutes), send only a toast update
-    if (sentTimerRef.current && Date.now() - sentTimerRef.current < REQUEST_EXPIRY_MS) {
-      send({
-        type: 'toast',
-        message: finalMessage,
-      });
-      setMessage('');
-      showToast('📨 Mensaje enviado al monitor', 'info');
-      return;
-    }
-
-    // Send a new request (first time, after 3-min expiry, or after page reload)
+    // Always send a new request
     send({
       type: 'request',
       requestType: selectedType,
@@ -136,8 +121,14 @@ export default function ClientPage() {
       location,
     });
     setMessage('');
-    sentTimerRef.current = Date.now();
     setStatus(`📡 Solicitud de ${selectedType} enviada`);
+
+    // Voice feedback
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance('Solicitud enviada, espera el apoyo!');
+      utterance.lang = 'es-MX';
+      window.speechSynthesis.speak(utterance);
+    }
   }, [selectedType, message, location, connected, send, showToast, phoneNumber, country, hasLocation]);
 
   const handleGetLocation = () => {
