@@ -75,6 +75,7 @@ function rowToRequest(row) {
     requestType: row.tipodeayuda,
     message: row.mensaje || '',
     country: row.paisincidente || '',
+    telefono: row.telefonopersonaincidente || '',
     location: (row.latitud != null && row.longitud != null)
       ? { lat: parseFloat(row.latitud), lng: parseFloat(row.longitud) }
       : null,
@@ -123,16 +124,16 @@ app.get('/api/solicitudes', apiLimiter, async (req, res) => {
 // ---- REST API: Create a new incident ----
 app.post('/api/incidentes', apiLimiter, async (req, res) => {
   try {
-    const { requestType, message, country, location } = req.body;
+    const { requestType, message, country, location, telefono } = req.body;
     const lat = location?.lat ?? null;
     const lng = location?.lng ?? null;
     const now = new Date();
 
     const [result] = await pool.query(
       `INSERT INTO auxiah_tblincidentes
-         (tipodeayuda, latitud, longitud, mensaje, estatusincidente, paisincidente, fechacreacion, fechaactualizacion)
-       VALUES (?, ?, ?, ?, 'ABIERTO', ?, ?, ?)`,
-      [requestType, lat, lng, message || '', country || '', now, now]
+         (tipodeayuda, latitud, longitud, mensaje, estatusincidente, paisincidente, telefonopersonaincidente, fechacreacion, fechaactualizacion)
+       VALUES (?, ?, ?, ?, 'ABIERTO', ?, ?, ?, ?)`,
+      [requestType, lat, lng, message || '', country || '', telefono || '', now, now]
     );
 
     const newId = result.insertId;
@@ -292,9 +293,9 @@ wss.on('connection', (ws) => {
 
           const [result] = await pool.query(
             `INSERT INTO auxiah_tblincidentes
-               (tipodeayuda, latitud, longitud, mensaje, estatusincidente, paisincidente, fechacreacion, fechaactualizacion)
-             VALUES (?, ?, ?, ?, 'ABIERTO', ?, ?, ?)`,
-            [msg.requestType, lat, lng, msg.message || '', msg.country || '', now, now]
+               (tipodeayuda, latitud, longitud, mensaje, estatusincidente, paisincidente, telefonopersonaincidente, fechacreacion, fechaactualizacion)
+             VALUES (?, ?, ?, ?, 'ABIERTO', ?, ?, ?, ?)`,
+            [msg.requestType, lat, lng, msg.message || '', msg.country || '', msg.telefono || '', now, now]
           );
 
           const newId = result.insertId;
